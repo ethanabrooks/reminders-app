@@ -1,16 +1,16 @@
 // Shared types for iOS app <-> Server communication
 
-export type TaskStatus = "needsAction" | "completed";
+export type TaskStatus = 'needsAction' | 'completed';
 
 export interface NormalizedTask {
-  id: string;           // EventKit reminder.calendarItemIdentifier
-  listId: string;       // EKCalendar.calendarIdentifier
+  id: string; // EventKit reminder.calendarItemIdentifier
+  listId: string; // EKCalendar.calendarIdentifier
   title: string;
   notes?: string;
   status: TaskStatus;
-  dueISO?: string;      // RFC3339
+  dueISO?: string; // RFC3339
   completedISO?: string;
-  url?: string;         // app deeplink (e.g., myapp://task/<id>)
+  url?: string; // app deeplink (e.g., myapp://task/<id>)
 }
 
 export interface ReminderList {
@@ -19,19 +19,20 @@ export interface ReminderList {
 }
 
 export type CommandKind =
-  | "list_lists"
-  | "list_tasks"
-  | "create_task"
-  | "update_task"
-  | "complete_task"
-  | "delete_task";
+  | 'list_lists'
+  | 'list_tasks'
+  | 'create_task'
+  | 'update_task'
+  | 'complete_task'
+  | 'delete_task';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface CommandEnvelope<T = any> {
-  id: string;             // server command id
+  id: string; // server command id
   kind: CommandKind;
   payload: T;
-  iat: number;            // issued at
-  exp: number;            // short TTL (e.g., 60s)
+  iat: number; // issued at
+  exp: number; // short TTL (e.g., 60s)
 }
 
 // Payloads for each command type
@@ -73,7 +74,7 @@ export interface DeviceInfo {
 export interface CommandResult {
   commandId: string;
   success: boolean;
-  result?: any;
+  result?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
   error?: string;
   timestamp: number;
 }
