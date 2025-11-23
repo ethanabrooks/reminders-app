@@ -19,29 +19,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ""
     }
 
+    // MARK: - Application Lifecycle
+
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        // Initialize dependencies
+        // 1. Initialize dependencies (Factory pattern)
         self.window = makeWindow()
         self.commandHandler = makeCommandHandler()
 
-        // Request notification permissions
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) {
-            granted, _ in
-            if granted {
-                print("✅ Notification permission granted")
-            }
-        }
-
-        // Register for remote notifications (APNs)
-        DispatchQueue.main.async {
-            UIApplication.shared.registerForRemoteNotifications()
-        }
-
+        // 2. Setup system services
+        setupNotifications()
+        
         return true
     }
+
+    // MARK: - Factory Methods (Composition Root)
 
     private func makeCommandHandler() -> CommandHandler? {
         do {
@@ -62,6 +56,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return window
     }
 
+    private func setupNotifications() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) {
+            granted, _ in
+            if granted {
+                print("✅ Notification permission granted")
+            }
+        }
+        
+        DispatchQueue.main.async {
+            UIApplication.shared.registerForRemoteNotifications()
+        }
+    }
+
     // MARK: - APNs Registration
 
     func application(
@@ -71,7 +78,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let token = deviceToken.map { String(format: "%02x", $0) }.joined()
         print("📱 APNs Device Token: \(token)")
 
-        // Register with server
         Task {
             await registerDevice(apnsToken: token)
         }
@@ -84,7 +90,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         print("❌ Failed to register for remote notifications: \(error)")
         print("⚠️ App will use polling mode instead")
 
-        // Still register with server using a dummy token for polling mode
         Task {
             await registerDevice(apnsToken: "simulator-polling-mode")
         }
@@ -99,18 +104,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     ) {
         print("📥 Received remote notification")
 
+        // 1. Extract payload
         guard let envelope = userInfo["envelope"] as? String else {
             print("⚠️ No envelope in notification")
             completionHandler(.noData)
             return
         }
 
+        // 2. Resolve dependencies
         guard let handler = commandHandler else {
             print("❌ Command handler not initialized")
             completionHandler(.failed)
             return
         }
 
+        // 3. Execute
         Task {
             do {
                 let result = try await handler.processCommand(envelope: envelope)

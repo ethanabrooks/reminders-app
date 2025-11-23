@@ -12,6 +12,7 @@
 		AA0003 /* JWTVerifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0013 /* JWTVerifier.swift */; };
 		AA0004 /* RemindersService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0014 /* RemindersService.swift */; };
 		AA0005 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0015 /* ViewController.swift */; };
+		AA0006 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0017 /* Models.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,6 +22,7 @@
 		AA0014 /* RemindersService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersService.swift; sourceTree = "<group>"; };
 		AA0015 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		AA0016 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AA0017 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		AA0020 /* GPTReminders.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GPTReminders.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -68,6 +70,7 @@
 				AA0013 /* JWTVerifier.swift */,
 				AA0014 /* RemindersService.swift */,
 				AA0015 /* ViewController.swift */,
+				AA0017 /* Models.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -154,6 +157,7 @@
 				AA0003 /* JWTVerifier.swift in Sources */,
 				AA0004 /* RemindersService.swift in Sources */,
 				AA0005 /* ViewController.swift in Sources */,
+				AA0006 /* Models.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
