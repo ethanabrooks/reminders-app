@@ -29,12 +29,12 @@ final class RemindersService {
         store.calendars(for: .reminder)
     }
 
-    func listCalendarsDTO() -> [[String: Any]] {
+    func listCalendarsDTO() -> [CalendarDTO] {
         reminderCalendars().map { calendar in
-            [
-                "id": calendar.calendarIdentifier,
-                "title": calendar.title
-            ]
+            CalendarDTO(
+                id: calendar.calendarIdentifier,
+                title: calendar.title
+            )
         }
     }
 
@@ -146,7 +146,7 @@ final class RemindersService {
 
     // MARK: - DTO Conversion
 
-    func toDTO(_ reminder: EKReminder) -> [String: Any] {
+    func toDTO(_ reminder: EKReminder) -> ReminderDTO {
         var dueISO: String?
         if let comps = reminder.dueDateComponents,
            let date = Calendar.current.date(from: comps) {
@@ -158,16 +158,16 @@ final class RemindersService {
             completedISO = ISO8601DateFormatter().string(from: date)
         }
 
-        return [
-            "id": reminder.calendarItemIdentifier,
-            "listId": reminder.calendar.calendarIdentifier,
-            "title": reminder.title ?? "",
-            "notes": reminder.notes ?? "",
-            "status": reminder.isCompleted ? "completed" : "needsAction",
-            "dueISO": dueISO as Any,
-            "completedISO": completedISO as Any,
-            "url": "gptreminders://task/\(reminder.calendarItemIdentifier)"
-        ]
+        return ReminderDTO(
+            id: reminder.calendarItemIdentifier,
+            listId: reminder.calendar.calendarIdentifier,
+            title: reminder.title ?? "",
+            notes: reminder.notes ?? "",
+            status: reminder.isCompleted ? "completed" : "needsAction",
+            dueISO: dueISO,
+            completedISO: completedISO,
+            url: "gptreminders://task/\(reminder.calendarItemIdentifier)"
+        )
     }
 }
 

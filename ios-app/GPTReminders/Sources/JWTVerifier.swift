@@ -36,7 +36,7 @@ struct JWTVerifier {
         self.publicKey = secKey
     }
 
-    func verify(token: String) throws -> [String: Any] {
+    func verify(token: String) throws -> Data {
         let parts = token.split(separator: ".")
         guard parts.count == 3 else {
             throw JWTError.invalidFormat
@@ -62,10 +62,13 @@ struct JWTVerifier {
             throw JWTError.signatureInvalid
         }
 
-        // Decode payload
-        guard let payloadData = base64URLDecode(String(parts[1])),
-              let payload = try? JSONSerialization.jsonObject(with: payloadData) as? [String: Any] else {
+        // Decode payload to check expiration
+        guard let payloadData = base64URLDecode(String(parts[1])) else {
             throw JWTError.invalidPayload
+        }
+        
+        guard let payload = try? JSONSerialization.jsonObject(with: payloadData) as? [String: Any] else {
+             throw JWTError.invalidPayload
         }
 
         // Verify expiration
@@ -76,7 +79,7 @@ struct JWTVerifier {
             }
         }
 
-        return payload
+        return payloadData
     }
 
     private func base64URLDecode(_ string: String) -> Data? {

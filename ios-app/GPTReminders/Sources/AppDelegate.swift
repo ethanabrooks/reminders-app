@@ -11,7 +11,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     private var publicKeyPEM: String {
         if let filepath = Bundle.main.path(forResource: "public", ofType: "pem"),
-           let contents = try? String(contentsOfFile: filepath) {
+            let contents = try? String(contentsOfFile: filepath)
+        {
             return contents
         }
         // Fallback or empty string (will cause CommandHandler to fail)
@@ -34,7 +35,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
 
         // Request notification permissions
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) {
+            granted, _ in
             if granted {
                 print("✅ Notification permission granted")
             }
@@ -131,7 +133,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         let body: [String: String] = [
             "userId": userId,
-            "apnsToken": apnsToken
+            "apnsToken": apnsToken,
         ]
 
         do {
@@ -139,7 +141,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             let (data, response) = try await URLSession.shared.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse,
-                  (200...299).contains(httpResponse.statusCode) else {
+                (200...299).contains(httpResponse.statusCode)
+            else {
                 print("❌ Failed to register device")
                 return
             }

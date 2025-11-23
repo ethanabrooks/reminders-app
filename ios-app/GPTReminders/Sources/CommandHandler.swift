@@ -15,120 +15,105 @@ final class CommandHandler {
     // MARK: - Command Processing
 
     func processCommand(envelope: String) async throws -> Any {
-        // Verify JWT signature
-        let payload = try jwtVerifier.verify(token: envelope)
+        // Verify JWT signature and get raw payload data
+        let payloadData = try jwtVerifier.verify(token: envelope)
+        
+        // Decode metadata first to determine the operation kind
+        let meta = try JSONDecoder().decode(CommandMetadata.self, from: payloadData)
+        let commandId = meta.id
 
-        guard let commandId = payload["id"] as? String,
-              let kind = payload["kind"] as? String,
-              let commandPayload = payload["payload"] as? [String: Any] else {
-            throw CommandError.invalidPayload
-        }
-
-        print("📥 Processing command: \(kind) [\(commandId)]")
+        print("📥 Processing command: \(meta.kind.rawValue) [\(commandId)]")
 
         // Ensure reminders access
         try await remindersService.ensureAccess()
 
-        // Execute command
-        let result: Any
-        switch kind {
-        case "list_lists":
-            result = try handleListLists()
+        // Execute command and get result as an Encodable (converted to Any for transport)
+        let resultAny: Any
+        
+        switch meta.kind {
+        case .listLists:
+            let res = remindersService.listCalendarsDTO()
+            resultAny = try encodeToAny(res)
 
-        case "list_tasks":
-            result = try handleListTasks(payload: commandPayload)
+        case .listTasks:
+            let cmd = try JSONDecoder().decode(CommandWithPayload<ListTasksPayload>.self, from: payloadData)
+            let res = try handleListTasks(payload: cmd.payload)
+            resultAny = try encodeToAny(res)
 
-        case "create_task":
-            result = try handleCreateTask(payload: commandPayload)
+        case .createTask:
+            let cmd = try JSONDecoder().decode(CommandWithPayload<CreateTaskPayload>.self, from: payloadData)
+            let res = try handleCreateTask(payload: cmd.payload)
+            resultAny = try encodeToAny(res)
 
-        case "update_task":
-            result = try handleUpdateTask(payload: commandPayload)
+        case .updateTask:
+            let cmd = try JSONDecoder().decode(CommandWithPayload<UpdateTaskPayload>.self, from: payloadData)
+            let res = try handleUpdateTask(payload: cmd.payload)
+            resultAny = try encodeToAny(res)
 
-        case "complete_task":
-            result = try handleCompleteTask(payload: commandPayload)
+        case .completeTask:
+            let cmd = try JSONDecoder().decode(CommandWithPayload<TaskActionPayload>.self, from: payloadData)
+            let res = try handleCompleteTask(payload: cmd.payload)
+            resultAny = try encodeToAny(res)
 
-        case "delete_task":
-            result = try handleDeleteTask(payload: commandPayload)
-
-        default:
-            throw CommandError.unknownOperation(kind)
+        case .deleteTask:
+            let cmd = try JSONDecoder().decode(CommandWithPayload<TaskActionPayload>.self, from: payloadData)
+            let res = try handleDeleteTask(payload: cmd.payload)
+            resultAny = try encodeToAny(res)
         }
 
         // Send result to server
-        try await sendResult(commandId: commandId, success: true, result: result)
+        try await sendResult(commandId: commandId, success: true, result: resultAny)
 
-        return result
+        return resultAny
+    }
+    
+    private func encodeToAny<T: Encodable>(_ value: T) throws -> Any {
+        let data = try JSONEncoder().encode(value)
+        return try JSONSerialization.jsonObject(with: data)
     }
 
     // MARK: - Command Handlers
 
-    private func handleListLists() throws -> [[String: Any]] {
-        return remindersService.listCalendarsDTO()
-    }
+    private func handleListTasks(payload: ListTasksPayload) throws -> [ReminderDTO] {
+        let completed: Bool?
+        if let s = payload.status {
+            completed = (s == "completed") ? true : (s == "needsAction" ? false : nil)
+        } else {
+            completed = nil
+        }
 
-    private func handleListTasks(payload: [String: Any]) throws -> [[String: Any]] {
-        let listId = payload["list_id"] as? String
-        let statusStr = payload["status"] as? String
-        let completed = statusStr == "completed" ? true : (statusStr == "needsAction" ? false : nil)
-
-        let reminders = remindersService.listTasks(listId: listId, completed: completed)
+        let reminders = remindersService.listTasks(listId: payload.list_id, completed: completed)
         return reminders.map { remindersService.toDTO($0) }
     }
 
-    private func handleCreateTask(payload: [String: Any]) throws -> [String: Any] {
-        guard let title = payload["title"] as? String else {
-            throw CommandError.missingParameter("title")
-        }
-
-        let notes = payload["notes"] as? String
-        let listId = payload["list_id"] as? String
-        let dueISO = payload["due_iso"] as? String
-
+    private func handleCreateTask(payload: CreateTaskPayload) throws -> ReminderDTO {
         let reminder = try remindersService.createReminder(
-            title: title,
-            notes: notes,
-            listId: listId,
-            dueISO: dueISO
+            title: payload.title,
+            notes: payload.notes,
+            listId: payload.list_id,
+            dueISO: payload.due_iso
         )
-
         return remindersService.toDTO(reminder)
     }
 
-    private func handleUpdateTask(payload: [String: Any]) throws -> [String: Any] {
-        guard let taskId = payload["task_id"] as? String else {
-            throw CommandError.missingParameter("task_id")
-        }
-
-        let title = payload["title"] as? String
-        let notes = payload["notes"] as? String
-        let dueISO = payload["due_iso"] as? String
-
+    private func handleUpdateTask(payload: UpdateTaskPayload) throws -> ReminderDTO {
         let reminder = try remindersService.updateTask(
-            taskId: taskId,
-            title: title,
-            notes: notes,
-            dueISO: dueISO
+            taskId: payload.task_id,
+            title: payload.title,
+            notes: payload.notes,
+            dueISO: payload.due_iso
         )
-
         return remindersService.toDTO(reminder)
     }
 
-    private func handleCompleteTask(payload: [String: Any]) throws -> [String: Any] {
-        guard let taskId = payload["task_id"] as? String else {
-            throw CommandError.missingParameter("task_id")
-        }
-
-        let reminder = try remindersService.completeTask(taskId: taskId)
+    private func handleCompleteTask(payload: TaskActionPayload) throws -> ReminderDTO {
+        let reminder = try remindersService.completeTask(taskId: payload.task_id)
         return remindersService.toDTO(reminder)
     }
 
-    private func handleDeleteTask(payload: [String: Any]) throws -> [String: String] {
-        guard let taskId = payload["task_id"] as? String else {
-            throw CommandError.missingParameter("task_id")
-        }
-
-        try remindersService.deleteTask(taskId: taskId)
-        return ["ok": "true"]
+    private func handleDeleteTask(payload: TaskActionPayload) throws -> EmptyResult {
+        try remindersService.deleteTask(taskId: payload.task_id)
+        return EmptyResult(ok: true)
     }
 
     // MARK: - Result Reporting
