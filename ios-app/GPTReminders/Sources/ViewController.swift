@@ -288,7 +288,31 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
                     ],
                     "required": ["task_id"]
                 ]
-            ))
+            )),
+            OpenAITool(type: "function", function: OpenAIFunctionDefinition(
+               name: "render_task_list",
+               description: "Display a list of tasks to the user in a nice UI. Use this whenever the user asks to see their tasks.",
+               parameters: [
+                   "type": "object",
+                   "properties": [
+                       "tasks": [
+                           "type": "array",
+                           "items": [
+                               "type": "object",
+                               "properties": [
+                                   "id": ["type": "string"],
+                                   "title": ["type": "string"],
+                                   "status": ["type": "string"],
+                                   "listId": ["type": "string"],
+                                   "notes": ["type": "string"],
+                                   "dueISO": ["type": "string"]
+                               ]
+                           ]
+                       ]
+                   ],
+                   "required": ["tasks"]
+               ]
+           ))
         ]
     }
     
@@ -333,6 +357,12 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
                 let dto = remindersService.toDTO(reminder)
                 return toJson(dto)
                 
+            case "render_task_list":
+                 // This is a client-side only tool. We return a success message to GPT.
+                 // The UI will update because the Assistant message containing this tool call
+                 // will be rendered by ChatCell with the special UI.
+                 return "Displayed tasks to user."
+
             default:
                 return "Unknown function: \(toolCall.function.name)"
             }
@@ -385,6 +415,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
 class ChatCell: UITableViewCell {
     private let bubbleView = UIView()
     private let messageLabel = UILabel()
+    private let tasksStackView = UIStackView()
     
     private var leadingConstraint: NSLayoutConstraint!
     private var trailingConstraint: NSLayoutConstraint!
@@ -401,6 +432,7 @@ class ChatCell: UITableViewCell {
         backgroundColor = .clear
         contentView.addSubview(bubbleView)
         bubbleView.addSubview(messageLabel)
+        bubbleView.addSubview(tasksStackView)
         
         bubbleView.layer.cornerRadius = 12
         bubbleView.translatesAutoresizingMaskIntoConstraints = false
@@ -409,15 +441,23 @@ class ChatCell: UITableViewCell {
         messageLabel.translatesAutoresizingMaskIntoConstraints = false
         messageLabel.font = .systemFont(ofSize: 16)
         
+        tasksStackView.axis = .vertical
+        tasksStackView.spacing = 8
+        tasksStackView.translatesAutoresizingMaskIntoConstraints = false
+        
         NSLayoutConstraint.activate([
             messageLabel.topAnchor.constraint(equalTo: bubbleView.topAnchor, constant: 8),
-            messageLabel.bottomAnchor.constraint(equalTo: bubbleView.bottomAnchor, constant: -8),
             messageLabel.leadingAnchor.constraint(equalTo: bubbleView.leadingAnchor, constant: 12),
             messageLabel.trailingAnchor.constraint(equalTo: bubbleView.trailingAnchor, constant: -12),
             
+            tasksStackView.topAnchor.constraint(equalTo: messageLabel.bottomAnchor, constant: 8),
+            tasksStackView.leadingAnchor.constraint(equalTo: bubbleView.leadingAnchor, constant: 12),
+            tasksStackView.trailingAnchor.constraint(equalTo: bubbleView.trailingAnchor, constant: -12),
+            tasksStackView.bottomAnchor.constraint(equalTo: bubbleView.bottomAnchor, constant: -8),
+            
             bubbleView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
             bubbleView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -4),
-            bubbleView.widthAnchor.constraint(lessThanOrEqualTo: contentView.widthAnchor, multiplier: 0.75)
+            bubbleView.widthAnchor.constraint(lessThanOrEqualTo: contentView.widthAnchor, multiplier: 0.85)
         ])
         
         leadingConstraint = bubbleView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16)
@@ -426,6 +466,8 @@ class ChatCell: UITableViewCell {
     
     func configure(with msg: OpenAIMessage) {
         messageLabel.font = .systemFont(ofSize: 16)
+        tasksStackView.isHidden = true
+        tasksStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         
         if msg.role == "user" {
             bubbleView.backgroundColor = .systemBlue
@@ -435,10 +477,11 @@ class ChatCell: UITableViewCell {
             leadingConstraint.isActive = false
             trailingConstraint.isActive = true
         } else if msg.role == "tool" {
-             bubbleView.backgroundColor = .systemGray5
+            // This should be filtered out by displayedMessages, but handled just in case
+            bubbleView.backgroundColor = .systemGray5
              messageLabel.textColor = .secondaryLabel
              messageLabel.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
-             messageLabel.text = "⚙️  ..."
+             messageLabel.text = "⚙️ Tool Output"
             
             trailingConstraint.isActive = false
             leadingConstraint.isActive = true
@@ -448,13 +491,119 @@ class ChatCell: UITableViewCell {
             messageLabel.textColor = .label
             messageLabel.text = msg.content
             
-            if msg.content == nil && msg.tool_calls != nil {
-                messageLabel.text = "📱 Interacting with Reminders..."
-                messageLabel.font = .italicSystemFont(ofSize: 14)
+            // Check for render_task_list tool call
+            if let toolCalls = msg.tool_calls {
+                for call in toolCalls {
+                    if call.function.name == "render_task_list" {
+                        // Parse tasks and render
+                        if let tasks = try? parseTasks(from: call.function.arguments) {
+                            renderTasks(tasks)
+                            messageLabel.text = msg.content ?? "Here are your tasks:"
+                        }
+                    }
+                }
+                
+                if msg.content == nil && tasksStackView.isHidden && msg.tool_calls != nil {
+                     messageLabel.text = "📱 Interacting with Reminders..."
+                     messageLabel.font = .italicSystemFont(ofSize: 14)
+                }
             }
             
             trailingConstraint.isActive = false
             leadingConstraint.isActive = true
+        }
+    }
+    
+    private func parseTasks(from jsonString: String) throws -> [ReminderDTO] {
+        guard let data = jsonString.data(using: .utf8) else { return [] }
+        do {
+            let payload = try JSONDecoder().decode(RenderTaskListPayload.self, from: data)
+            return payload.tasks
+        } catch {
+            print("❌ Failed to parse tasks for rendering: \(error)")
+            throw error
+        }
+    }
+    
+    private func renderTasks(_ tasks: [ReminderDTO]) {
+        tasksStackView.isHidden = false
+        for task in tasks {
+            let view = TaskView()
+            view.configure(with: task)
+            tasksStackView.addArrangedSubview(view)
+        }
+    }
+}
+
+class TaskView: UIView {
+    private let titleLabel = UILabel()
+    private let statusIcon = UILabel()
+    private let dateLabel = UILabel()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setup()
+    }
+    
+    required init?(coder: NSCoder) { fatalError() }
+    
+    private func setup() {
+        backgroundColor = .white
+        layer.cornerRadius = 8
+        layer.borderWidth = 1
+        layer.borderColor = UIColor.systemGray5.cgColor
+        
+        titleLabel.font = .systemFont(ofSize: 14, weight: .medium)
+        titleLabel.numberOfLines = 0
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        dateLabel.font = .systemFont(ofSize: 12)
+        dateLabel.textColor = .secondaryLabel
+        dateLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        statusIcon.font = .systemFont(ofSize: 14)
+        statusIcon.translatesAutoresizingMaskIntoConstraints = false
+        
+        let textStack = UIStackView(arrangedSubviews: [titleLabel, dateLabel])
+        textStack.axis = .vertical
+        textStack.spacing = 2
+        textStack.translatesAutoresizingMaskIntoConstraints = false
+        
+        addSubview(statusIcon)
+        addSubview(textStack)
+        
+        NSLayoutConstraint.activate([
+            statusIcon.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
+            statusIcon.centerYAnchor.constraint(equalTo: centerYAnchor),
+            statusIcon.widthAnchor.constraint(equalToConstant: 24),
+            
+            textStack.leadingAnchor.constraint(equalTo: statusIcon.trailingAnchor, constant: 4),
+            textStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+            textStack.topAnchor.constraint(equalTo: topAnchor, constant: 8),
+            textStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8)
+        ])
+    }
+    
+    func configure(with task: ReminderDTO) {
+        titleLabel.text = task.title ?? "Untitled Task"
+        statusIcon.text = (task.status == "completed") ? "✅" : "⭕️"
+        
+        if let dueISO = task.dueISO, let date = ISO8601DateFormatter().date(from: dueISO) {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .short
+            dateLabel.text = "Due: " + formatter.string(from: date)
+            dateLabel.isHidden = false
+        } else {
+            dateLabel.text = nil
+            dateLabel.isHidden = true
+        }
+        
+        if task.status == "completed" {
+            titleLabel.textColor = .secondaryLabel
+            // Strikethrough could go here
+        } else {
+            titleLabel.textColor = .label
         }
     }
 }

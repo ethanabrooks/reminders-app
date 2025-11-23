@@ -48,6 +48,10 @@ struct ListTasksPayload: Decodable {
     let status: String?
 }
 
+struct RenderTaskListPayload: Decodable {
+    let tasks: [ReminderDTO]
+}
+
 // MARK: - DTOs
 
 struct CalendarDTO: Codable {
@@ -56,14 +60,14 @@ struct CalendarDTO: Codable {
 }
 
 struct ReminderDTO: Codable {
-    let id: String
-    let listId: String
-    let title: String
-    let notes: String
-    let status: String
+    let id: String?
+    let listId: String?
+    let title: String?
+    let notes: String?
+    let status: String?
     let dueISO: String?
     let completedISO: String?
-    let url: String
+    let url: String?
 }
 
 struct EmptyResult: Codable {
