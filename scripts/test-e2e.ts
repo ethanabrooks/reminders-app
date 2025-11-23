@@ -75,7 +75,7 @@ async function runTest() {
 
     // 2. Start Simulator
     console.log('Starting simulated device...');
-    simProcess = spawn('npx', ['tsx', 'simulate-device.ts'], {
+    simProcess = spawn('npx', ['tsx', 'scripts/simulate-device.ts'], {
       cwd: ROOT_DIR,
       env: ENV,
       shell: false,
@@ -92,7 +92,7 @@ async function runTest() {
     console.log('Running GPT client...');
     const clientProcess = spawn(
       'npx',
-      ['tsx', 'gpt-integration-example.ts', "What's on my todo list?"],
+      ['tsx', 'scripts/gpt-integration-example.ts', "What's on my todo list?"],
       {
         cwd: ROOT_DIR,
         env: { ...ENV, USER_ID: 'A0FE1D55-DA04-4848-825B-BC76BF0590EE' },

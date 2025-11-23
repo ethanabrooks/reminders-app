@@ -14,7 +14,7 @@ module.exports = {
 
   // iOS: SwiftLint
   'ios-app/**/*.swift': (filenames) => {
-    return `if command -v swiftlint >/dev/null; then swiftlint lint --fix ${filenames.join(' ')}; else echo "⚠️ SwiftLint not installed. Skipping."; fi`;
+    return `swiftlint lint --fix ${filenames.join(' ')}`;
   },
 
   // Root/Other: Prettier only (for files not in server/)
@@ -25,7 +25,7 @@ module.exports = {
   // Scripts: ShellCheck & shfmt
   '*.sh': (filenames) => {
     return [
-      `if command -v shfmt >/dev/null; then shfmt -w -i 2 -ci -sr ${filenames.join(' ')}; fi`,
+      `shfmt -w -i 2 -ci -sr ${filenames.join(' ')}`,
       `npx shellcheck ${filenames.join(' ')}`
     ];
   }

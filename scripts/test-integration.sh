@@ -82,7 +82,7 @@ while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
     echo ""
     echo "Next steps:"
     echo "1. Set your OpenAI API key: export OPENAI_API_KEY='sk-...'"
-    echo "2. Run the GPT example: npx tsx gpt-integration-example.ts"
+    echo "2. Run the GPT example: npx tsx scripts/gpt-integration-example.ts"
     exit 0
   fi
 
