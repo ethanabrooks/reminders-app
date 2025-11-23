@@ -196,15 +196,20 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     private func callOpenAI() async {
         guard let url = URL(string: "https://api.openai.com/v1/chat/completions") else { return }
         
-        // Filter out system messages (internal logs) for the API call context if needed, 
-        // but here we keep them if they are just role="system"
+        // Provide current time in system message
+        let now = DateFormatter.localizedString(from: Date(), dateStyle: .full, timeStyle: .short)
+        let systemContent = "Hello! I can help you manage your Apple Reminders. Just ask me to create, list, or complete tasks. Today is \(now)."
+        
+        // Check if we already have a system message, if so update it, otherwise add it
+        var requestMessages = messages.filter { $0.role != "system" || $0.content?.starts(with: "Hello") == false }
+        requestMessages.insert(OpenAIMessage(role: "system", content: systemContent), at: 0)
         
         // Define tools matching the schema
         let tools = defineTools()
         
         let requestBody = OpenAIChatRequest(
             model: "gpt-4o", // or gpt-4-turbo
-            messages: messages.filter { $0.role != "system" || $0.content?.starts(with: "Hello") == false }, // Send context
+            messages: requestMessages,
             tools: tools,
             tool_choice: "auto"
         )
