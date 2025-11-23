@@ -9,11 +9,17 @@
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
-    "prettier": "^3.6.2"
+    "prettier": "^3.6.2",
+    "shellcheck": "^1.2.2",
+    "shfmt": "^3.8.0"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,md}": [
       "prettier --write"
+    ],
+    "*.sh": [
+      "shfmt -w -i 2 -ci -sr",
+      "shellcheck"
     ]
   }
 }
