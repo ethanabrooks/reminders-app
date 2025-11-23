@@ -251,8 +251,8 @@ const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   console.log(`
 ╭─────────────────────────────────────────────╮
-│  🍎 GPT → Apple Reminders Proxy Server     │
-│  🚀 Running on http://localhost:${PORT}      │
+│  🍎 GPT → Apple Reminders Proxy Server      │
+│  🚀 Running on http://localhost:${PORT}        │
 ╰─────────────────────────────────────────────╯
 
 Endpoints:

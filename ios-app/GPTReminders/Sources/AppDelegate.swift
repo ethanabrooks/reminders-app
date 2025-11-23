@@ -32,6 +32,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // 2. Setup system services
         setupNotifications()
         
+        #if targetEnvironment(simulator)
+        print("📱 Running on Simulator: starting polling immediately")
+        startPolling()
+        #endif
+
         return true
     }
 
@@ -125,6 +130,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         Task {
             await registerDevice(apnsToken: token)
         }
+
+        #if targetEnvironment(simulator)
+        print("📱 Running on Simulator: forcing polling mode")
+        startPolling()
+        #endif
     }
 
     func application(
