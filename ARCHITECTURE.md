@@ -65,6 +65,7 @@
    "Add a reminder to buy milk tomorrow at 9am"
 
 2. **GPT → Server:**
+
    ```http
    POST /tool/tasks
    {
@@ -78,27 +79,33 @@
    ```
 
 3. **Server processes:**
+
    ```typescript
    // Generate command
-   const commandId = "cmd_1699564234_abc123"
+   const commandId = 'cmd_1699564234_abc123';
 
    // Sign JWT
-   const jwt = sign({
-     id: commandId,
-     kind: "create_task",
-     payload: { title: "Buy milk", due_iso: "..." },
-     iat: 1699564234,
-     exp: 1699564294  // +60s
-   }, PRIVATE_KEY, { algorithm: "RS256" })
+   const jwt = sign(
+     {
+       id: commandId,
+       kind: 'create_task',
+       payload: { title: 'Buy milk', due_iso: '...' },
+       iat: 1699564234,
+       exp: 1699564294, // +60s
+     },
+     PRIVATE_KEY,
+     { algorithm: 'RS256' },
+   );
 
    // Send via APNs
-   await sendSilentPush(deviceToken, { envelope: jwt })
+   await sendSilentPush(deviceToken, { envelope: jwt });
 
    // Return to GPT
-   return { ok: true, commandId }
+   return { ok: true, commandId };
    ```
 
 4. **iOS App receives push:**
+
    ```swift
    // APNs delivers
    { "envelope": "eyJhbG..." }
@@ -125,6 +132,7 @@
    ```
 
 5. **Server → GPT (optional polling):**
+
    ```http
    GET /tool/result/cmd_1699564234_abc123
 
@@ -143,6 +151,7 @@
 ### JWT Token Structure
 
 **Header:**
+
 ```json
 {
   "alg": "RS256",
@@ -151,6 +160,7 @@
 ```
 
 **Payload:**
+
 ```json
 {
   "id": "cmd_1699564234_abc123",
@@ -165,6 +175,7 @@
 ```
 
 **Signature:**
+
 ```
 RS256(
   base64(header) + "." + base64(payload),
@@ -219,6 +230,7 @@ func verify(token: String) throws -> [String: Any] {
 ```
 
 **Key Properties:**
+
 - Server cannot be impersonated (only holder of private key can sign)
 - Commands cannot be forged (signature verification fails)
 - Commands cannot be replayed (60s expiration)
@@ -384,6 +396,7 @@ Map<commandId, CommandResult> {
 ```
 
 **Changes needed:**
+
 1. Redis for pending commands & results
 2. PostgreSQL for device registry & audit log
 3. Bull/BullMQ for command queue
@@ -402,6 +415,7 @@ Total: 5-10s for round-trip
 ```
 
 **Breakdown:**
+
 - GPT inference: 1-3s (depends on model)
 - Server processing: <50ms
 - APNs delivery: 1-5s (avg ~2s)
@@ -468,6 +482,7 @@ async function retryWithBackoff(fn, maxRetries = 3) {
 ### URL Scheme Registration
 
 **Info.plist:**
+
 ```xml
 <key>CFBundleURLTypes</key>
 <array>
@@ -549,6 +564,7 @@ curl http://localhost:3000/tool/result/<commandId>
 ---
 
 This architecture provides:
+
 - ✅ Security via JWT signing
 - ✅ Reliability via dual delivery (push + poll)
 - ✅ Scalability via stateless design

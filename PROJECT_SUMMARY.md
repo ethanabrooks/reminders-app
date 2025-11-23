@@ -50,6 +50,7 @@ A production-ready system that allows GPT (or any LLM) to securely read and writ
 ## Features Implemented
 
 ### Core Functionality
+
 - ✅ Create reminders
 - ✅ List reminders (with filters)
 - ✅ Update reminders
@@ -58,6 +59,7 @@ A production-ready system that allows GPT (or any LLM) to securely read and writ
 - ✅ List reminder lists
 
 ### Security
+
 - ✅ RS256 JWT command signing
 - ✅ Signature verification on device
 - ✅ Short-lived tokens (60s TTL)
@@ -65,12 +67,14 @@ A production-ready system that allows GPT (or any LLM) to securely read and writ
 - ✅ No plaintext secrets in code
 
 ### Delivery
+
 - ✅ APNs silent push (instant)
 - ✅ Polling fallback (when push unavailable)
 - ✅ Background command processing
 - ✅ Result webhook
 
 ### UX
+
 - ✅ Permission request flow
 - ✅ Deep links (gptreminders://task/<id>)
 - ✅ Activity log
@@ -80,23 +84,27 @@ A production-ready system that allows GPT (or any LLM) to securely read and writ
 ## Architecture Highlights
 
 ### Request Flow
+
 ```
 GPT → Server → APNs → iOS → EventKit → iOS → Server → GPT
 ```
 
 ### Security Model
+
 - Server holds RS256 private key (signs commands)
 - iOS app holds public key (verifies commands)
 - No command executes without valid signature
 - Expired tokens rejected automatically
 
 ### Delivery Methods
+
 1. **APNs Push (preferred):** 1-5s delivery
 2. **Polling (fallback):** Check on app foreground
 
 ## Ready for Production?
 
 ### What's Production-Ready
+
 - ✅ Security (JWT signing)
 - ✅ Error handling
 - ✅ Graceful fallback (polling)
@@ -104,6 +112,7 @@ GPT → Server → APNs → iOS → EventKit → iOS → Server → GPT
 - ✅ Documentation
 
 ### What Needs Scaling
+
 - 🔄 Replace in-memory storage with Redis/PostgreSQL
 - 🔄 Add proper user authentication
 - 🔄 Implement rate limiting
@@ -114,27 +123,32 @@ GPT → Server → APNs → iOS → EventKit → iOS → Server → GPT
 ## Getting Started
 
 ### 1. Install Dependencies
+
 ```bash
 cd server && npm install
 ```
 
 ### 2. Generate Keys
+
 ```bash
 npm run gen-keys
 ```
 
 ### 3. Configure
+
 ```bash
 cp .env.example .env
 # Edit .env with your settings
 ```
 
 ### 4. Run Server
+
 ```bash
 npm run dev
 ```
 
 ### 5. Build iOS App
+
 1. Open Xcode
 2. Create new iOS project
 3. Copy Swift files
@@ -142,11 +156,13 @@ npm run dev
 5. Build & run on device
 
 ### 6. Connect GPT
+
 Use the function schema in INTEGRATION.md
 
 ## Example Usage
 
 ### GPT Function Call
+
 ```json
 {
   "name": "apple_reminders",
@@ -161,6 +177,7 @@ Use the function schema in INTEGRATION.md
 ```
 
 ### Result
+
 ```json
 {
   "id": "reminder-abc123",
@@ -173,18 +190,19 @@ Use the function schema in INTEGRATION.md
 
 ## Operations Supported
 
-| Operation | Description | Args |
-|-----------|-------------|------|
-| `list_lists` | Get all reminder lists | - |
-| `list_tasks` | Get tasks | `list_id?`, `status?` |
-| `create_task` | Create reminder | `title`, `notes?`, `list_id?`, `due_iso?` |
-| `update_task` | Update reminder | `task_id`, `title?`, `notes?`, `due_iso?` |
-| `complete_task` | Mark as done | `task_id` |
-| `delete_task` | Delete reminder | `task_id` |
+| Operation       | Description            | Args                                      |
+| --------------- | ---------------------- | ----------------------------------------- |
+| `list_lists`    | Get all reminder lists | -                                         |
+| `list_tasks`    | Get tasks              | `list_id?`, `status?`                     |
+| `create_task`   | Create reminder        | `title`, `notes?`, `list_id?`, `due_iso?` |
+| `update_task`   | Update reminder        | `task_id`, `title?`, `notes?`, `due_iso?` |
+| `complete_task` | Mark as done           | `task_id`                                 |
+| `delete_task`   | Delete reminder        | `task_id`                                 |
 
 ## Technology Stack
 
 ### Server
+
 - Node.js 20+
 - Express 4.x
 - TypeScript 5.x
@@ -192,6 +210,7 @@ Use the function schema in INTEGRATION.md
 - node-apn (push notifications)
 
 ### iOS
+
 - Swift 5.9+
 - iOS 14+
 - EventKit framework
@@ -214,23 +233,26 @@ Use the function schema in INTEGRATION.md
 - ✅ TLS in production (recommended)
 - ✅ No SQL injection (no SQL used)
 - ✅ No XSS risk (native app)
-- ⚠️  Add user authentication (next step)
-- ⚠️  Add rate limiting (next step)
+- ⚠️ Add user authentication (next step)
+- ⚠️ Add rate limiting (next step)
 
 ## Testing
 
 ### Server
+
 ```bash
 npm test  # (add tests)
 curl http://localhost:3000/health
 ```
 
 ### iOS
+
 - Tap "Create Test Reminder"
 - Check Apple Reminders app
 - Verify in Activity Log
 
 ### Integration
+
 ```bash
 curl -X POST http://localhost:3000/tool/tasks \
   -H "Content-Type: application/json" \

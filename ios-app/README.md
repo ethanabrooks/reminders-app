@@ -39,6 +39,7 @@ private let publicKeyPEM = """
 ```
 
 Get the public key by running on your server:
+
 ```bash
 cat keys/public.pem
 ```
@@ -81,6 +82,7 @@ GPT ← Server ← HTTP POST ← iOS App ←┘
 ### Security
 
 All commands are JWT-signed (RS256) with:
+
 - Short TTL (60s)
 - Signature verification before execution
 - Command ID for audit trail
@@ -113,15 +115,18 @@ Tap to open the specific reminder (currently just logs, extend as needed).
 ## Troubleshooting
 
 **"No registered device" error from server:**
+
 - Check app successfully called `/device/register`
 - Check Activity Log for registration confirmation
 
 **Commands not arriving:**
+
 - APNs not configured → App uses polling mode
 - Check server logs for push delivery status
 - Foreground the app to trigger polling
 
 **Permission denied:**
+
 - Go to Settings → Privacy & Security → Reminders
 - Enable access for GPT Reminders app
 

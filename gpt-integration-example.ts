@@ -57,7 +57,7 @@ async function pollForResult(commandId: string, maxAttempts = 15): Promise<any> 
   console.log(`⏳ Waiting for device to execute...`);
 
   for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second
 
     try {
       const response = await fetch(`${SERVER_URL}/tool/result/${commandId}`);
@@ -107,13 +107,21 @@ Be concise and friendly.`,
       type: 'function',
       function: {
         name: 'apple_reminders',
-        description: 'Read and write Apple Reminders through a trusted bridge app on the user\'s iPhone. Use this to create tasks, check what\'s on their list, mark items complete, etc.',
+        description:
+          "Read and write Apple Reminders through a trusted bridge app on the user's iPhone. Use this to create tasks, check what's on their list, mark items complete, etc.",
         parameters: {
           type: 'object',
           properties: {
             op: {
               type: 'string',
-              enum: ['list_lists', 'list_tasks', 'create_task', 'update_task', 'complete_task', 'delete_task'],
+              enum: [
+                'list_lists',
+                'list_tasks',
+                'create_task',
+                'update_task',
+                'complete_task',
+                'delete_task',
+              ],
               description: 'Operation to perform',
             },
             args: {
@@ -125,12 +133,15 @@ Be concise and friendly.`,
                 status: {
                   type: 'string',
                   enum: ['needsAction', 'completed'],
-                  description: 'Filter tasks by status'
+                  description: 'Filter tasks by status',
                 },
                 // For create_task
                 title: { type: 'string', description: 'Task title (required for create)' },
                 notes: { type: 'string', description: 'Task notes/description' },
-                due_iso: { type: 'string', description: 'Due date in ISO8601 format (e.g., 2025-11-10T14:00:00Z)' },
+                due_iso: {
+                  type: 'string',
+                  description: 'Due date in ISO8601 format (e.g., 2025-11-10T14:00:00Z)',
+                },
                 list_id_for_create: { type: 'string', description: 'List ID to add task to' },
                 // For update/complete/delete
                 task_id: { type: 'string', description: 'Task ID to modify' },
@@ -145,7 +156,7 @@ Be concise and friendly.`,
 
   // First API call
   let response = await openai.chat.completions.create({
-    model: 'gpt-4o',  // or 'gpt-4-turbo', 'gpt-4'
+    model: 'gpt-4o', // or 'gpt-4-turbo', 'gpt-4'
     messages,
     tools,
     tool_choice: 'auto',
@@ -228,8 +239,8 @@ async function main() {
   // Example conversations
   const examples = [
     "What's on my todo list?",
-    "Add a reminder to buy milk tomorrow at 10am",
-    "Show me all my completed tasks from today",
+    'Add a reminder to buy milk tomorrow at 10am',
+    'Show me all my completed tasks from today',
   ];
 
   // Run the first example

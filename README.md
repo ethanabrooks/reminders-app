@@ -14,11 +14,13 @@ A secure, production-ready system that lets GPT read and write Apple Reminders t
 ```
 
 **Security:**
+
 - All commands signed with RS256 JWT (60s TTL)
 - Device signature verification before EventKit access
 - Audit trail for all operations
 
 **Delivery:**
+
 - APNs silent push (instant)
 - Polling fallback (when push unavailable)
 
@@ -64,9 +66,16 @@ Use this OpenAI function schema (or get from `GET /tool/schema`):
     "properties": {
       "op": {
         "type": "string",
-        "enum": ["list_lists", "list_tasks", "create_task", "update_task", "complete_task", "delete_task"]
+        "enum": [
+          "list_lists",
+          "list_tasks",
+          "create_task",
+          "update_task",
+          "complete_task",
+          "delete_task"
+        ]
       },
-      "args": {"type": "object"}
+      "args": { "type": "object" }
     },
     "required": ["op"]
   }
@@ -83,8 +92,8 @@ async function apple_reminders(op: string, args: any) {
     body: JSON.stringify({
       userId: getCurrentUserId(), // Your auth system
       op,
-      args
-    })
+      args,
+    }),
   });
   return response.json();
 }
@@ -172,6 +181,7 @@ For instant push delivery instead of polling:
    - Download `.p8` file (one-time download!)
 
 2. **Configure server** `.env`:
+
    ```bash
    APNS_KEY_PATH=./keys/AuthKey_XXXXXXXXXX.p8
    APNS_KEY_ID=XXXXXXXXXX
@@ -211,37 +221,43 @@ gpt-apple-reminders/
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/device/register` | Register iOS device with APNs token |
-| POST | `/device/result` | Device posts command results |
-| GET | `/device/commands/:userId` | Poll for pending commands |
-| POST | `/tool/tasks` | GPT calls this to execute operations |
-| GET | `/tool/schema` | Returns OpenAI function schema |
-| GET | `/health` | Health check |
-| GET | `/status` | Server status & metrics |
+| Method | Path                       | Description                          |
+| ------ | -------------------------- | ------------------------------------ |
+| POST   | `/device/register`         | Register iOS device with APNs token  |
+| POST   | `/device/result`           | Device posts command results         |
+| GET    | `/device/commands/:userId` | Poll for pending commands            |
+| POST   | `/tool/tasks`              | GPT calls this to execute operations |
+| GET    | `/tool/schema`             | Returns OpenAI function schema       |
+| GET    | `/health`                  | Health check                         |
+| GET    | `/status`                  | Server status & metrics              |
 
 ## Security Considerations
 
 ### Command Signing
+
 - Server signs every command with RS256 private key
 - iOS app verifies with bundled public key
 - 60-second TTL prevents replay attacks
 - Each command has unique ID for audit trail
 
 ### Rate Limiting
+
 Add to your GPT integration:
+
 - Max 10 operations/minute per user
 - Debounce rapid-fire tool calls
 - Block bulk deletes without confirmation
 
 ### User Auth
+
 Current implementation uses device UUID. For production:
+
 - Implement OAuth or magic link
 - Map authenticated user → device registration
 - Verify user token in `/tool/tasks` endpoint
 
 ### Red Team Defense
+
 - Don't expose "delete all" operation
 - Require explicit confirmation for bulk changes
 - Log all operations with timestamps
@@ -319,6 +335,7 @@ npm start
 ### Database
 
 Replace in-memory `Map` storage with:
+
 - Redis for pending commands
 - PostgreSQL/MongoDB for audit logs
 - Cache results for webhook fanout
@@ -326,19 +343,23 @@ Replace in-memory `Map` storage with:
 ## Troubleshooting
 
 **"No registered device"**
+
 - Check iOS app called `/device/register` successfully
 - Verify `userId` matches between app and server
 
 **Commands not arriving**
+
 - APNs not configured → app uses polling
 - Check server logs for push delivery status
 - Foreground app to trigger polling
 
 **JWT signature verification fails**
+
 - Public key in iOS app doesn't match server's private key
 - Re-run `npm run gen-keys` and update app
 
 **Permission denied**
+
 - Settings → Privacy & Security → Reminders
 - Enable for GPT Reminders app
 

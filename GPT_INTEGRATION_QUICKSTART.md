@@ -17,6 +17,7 @@ curl http://localhost:3000/status
 ```
 
 Look for the `userId` field. It will look something like:
+
 ```json
 {
   "devices": [
@@ -93,24 +94,26 @@ import OpenAI from 'openai';
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // 1. Add the tool definition
-const tools = [{
-  type: 'function',
-  function: {
-    name: 'apple_reminders',
-    description: 'Manage Apple Reminders',
-    parameters: {
-      type: 'object',
-      properties: {
-        op: {
-          type: 'string',
-          enum: ['list_tasks', 'create_task', 'complete_task'],
+const tools = [
+  {
+    type: 'function',
+    function: {
+      name: 'apple_reminders',
+      description: 'Manage Apple Reminders',
+      parameters: {
+        type: 'object',
+        properties: {
+          op: {
+            type: 'string',
+            enum: ['list_tasks', 'create_task', 'complete_task'],
+          },
+          args: { type: 'object' },
         },
-        args: { type: 'object' }
+        required: ['op'],
       },
-      required: ['op']
-    }
-  }
-}];
+    },
+  },
+];
 
 // 2. Call OpenAI with tools
 const response = await openai.chat.completions.create({
@@ -128,7 +131,7 @@ for (const toolCall of response.choices[0].message.tool_calls || []) {
     const result = await fetch('http://localhost:3000/tool/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: YOUR_USER_ID, op, args })
+      body: JSON.stringify({ userId: YOUR_USER_ID, op, args }),
     });
 
     // Return result to GPT...
@@ -139,19 +142,23 @@ for (const toolCall of response.choices[0].message.tool_calls || []) {
 ## Use Cases
 
 ### Personal Assistant
+
 - "Add a reminder to take out the trash on Thursday"
 - "What do I need to do today?"
 - "Mark 'dentist appointment' as done"
 
 ### Smart Home Integration
+
 - "When I leave home, remind me to lock the door"
 - "Add all these groceries to my shopping list"
 
 ### Meeting Notes
+
 - "Create reminders from this meeting summary: [paste notes]"
 - GPT extracts action items and creates reminders automatically
 
 ### Email Integration
+
 - "Scan my unread emails and create reminders for follow-ups"
 - GPT reads emails, identifies tasks, creates reminders
 
@@ -168,16 +175,19 @@ For production use:
 ## Troubleshooting
 
 ### "No registered device" error
+
 - Make sure your iOS app is running and has granted Reminders access
 - Check server status: `curl http://localhost:3000/status`
 - Restart the iOS app if needed
 
 ### "Result not available yet"
+
 - The iOS device might be offline or the app is backgrounded
 - Try opening the app on the simulator/device
 - In polling mode, commands can take 5-30 seconds
 
 ### GPT doesn't call the function
+
 - Make sure your prompt is clear: "Add a reminder..." not "Maybe add..."
 - Check that the function description is accurate
 - Try using `tool_choice: 'required'` for testing

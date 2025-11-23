@@ -30,6 +30,7 @@ Run the test script to verify everything works:
 ```
 
 This will:
+
 - Check server connectivity
 - Find your registered device
 - Send a test command to list reminders
@@ -49,12 +50,12 @@ npx tsx gpt-integration-example.ts "What's on my todo list?"
 
 ## 📚 Files Created for You
 
-| File | Purpose |
-|------|---------|
-| `gpt-integration-example.ts` | Complete working example with GPT-4o |
-| `GPT_INTEGRATION_QUICKSTART.md` | Step-by-step setup guide |
-| `test-integration.sh` | Test script (no GPT needed) |
-| `INTEGRATION.md` | Detailed integration docs (already existed) |
+| File                            | Purpose                                     |
+| ------------------------------- | ------------------------------------------- |
+| `gpt-integration-example.ts`    | Complete working example with GPT-4o        |
+| `GPT_INTEGRATION_QUICKSTART.md` | Step-by-step setup guide                    |
+| `test-integration.sh`           | Test script (no GPT needed)                 |
+| `INTEGRATION.md`                | Detailed integration docs (already existed) |
 
 ## 🎯 What You Can Do
 
@@ -97,7 +98,7 @@ npx tsx gpt-integration-example.ts "What's on my todo list?"
 
 **User:** "Add a reminder to call the dentist tomorrow at 2pm"
 
-**GPT:** *[calls apple_reminders function with create_task]*
+**GPT:** _[calls apple_reminders function with create_task]_
 
 **Response:** "I've added a reminder to call the dentist tomorrow at 2 PM."
 
@@ -105,9 +106,10 @@ npx tsx gpt-integration-example.ts "What's on my todo list?"
 
 **User:** "What do I need to do today?"
 
-**GPT:** *[calls apple_reminders function with list_tasks]*
+**GPT:** _[calls apple_reminders function with list_tasks]_
 
 **Response:** "You have 3 tasks for today:
+
 1. Call dentist (2 PM)
 2. Buy groceries
 3. Finish project proposal"
@@ -116,7 +118,7 @@ npx tsx gpt-integration-example.ts "What's on my todo list?"
 
 **User:** "I finished the groceries, mark it done"
 
-**GPT:** *[calls apple_reminders function with complete_task]*
+**GPT:** _[calls apple_reminders function with complete_task]_
 
 **Response:** "Great! I've marked 'Buy groceries' as complete."
 
@@ -125,16 +127,19 @@ npx tsx gpt-integration-example.ts "What's on my todo list?"
 Your server exposes these endpoints:
 
 ### For GPT/Your App:
+
 - `POST /tool/tasks` - Send commands to iOS device
 - `GET /tool/result/:commandId` - Poll for command results
 - `GET /tool/schema` - Get OpenAI function schema
 
 ### For iOS App:
+
 - `POST /device/register` - Register device with APNs token
 - `POST /device/result` - Submit command execution results
 - `GET /device/commands/:userId` - Poll for pending commands
 
 ### Status/Health:
+
 - `GET /health` - Server health check
 - `GET /status` - See registered devices and stats
 
@@ -150,8 +155,8 @@ const response = await fetch('http://localhost:3000/tool/tasks', {
   body: JSON.stringify({
     userId: 'device-uuid',
     op: 'create_task',
-    args: { title: 'Buy milk' }
-  })
+    args: { title: 'Buy milk' },
+  }),
 });
 
 // Returns immediately with commandId
@@ -232,6 +237,7 @@ app.post('/tool/tasks', authenticateUser, async (req, res) => {
 **Problem:** `curl http://localhost:3000/status` shows no devices
 
 **Solutions:**
+
 - Make sure iOS app is running and in foreground
 - Check that Reminders access was granted
 - For simulator, the app might need to use `localhost:3000` instead of your IP
@@ -242,6 +248,7 @@ app.post('/tool/tasks', authenticateUser, async (req, res) => {
 **Problem:** `pollForResult()` times out
 
 **Solutions:**
+
 - iOS app must be in foreground (simulator limitation)
 - Check app has Reminders permission
 - Increase polling timeout
@@ -252,6 +259,7 @@ app.post('/tool/tasks', authenticateUser, async (req, res) => {
 **Problem:** GPT responds with text instead of calling the function
 
 **Solutions:**
+
 - Make prompt more explicit: "Add a reminder..." not "Can you add..."
 - Check function description is clear
 - Try `tool_choice: 'required'` during testing
@@ -260,21 +268,25 @@ app.post('/tool/tasks', authenticateUser, async (req, res) => {
 ## 💡 Use Case Ideas
 
 ### Personal Assistant
+
 - Natural language reminders
 - Smart scheduling
 - Task prioritization
 
 ### Email/Calendar Integration
+
 - Auto-create reminders from emails
 - Extract action items from meeting notes
 - Smart follow-up reminders
 
 ### Smart Home
+
 - Location-based reminders
 - "When I leave home, remind me..."
 - Shopping list management
 
 ### Team Productivity
+
 - Shared task management
 - Project milestone tracking
 - Deadline reminders

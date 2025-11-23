@@ -1,7 +1,13 @@
 {
   "scripts": {
     "prepare": "husky",
-    "test:e2e": "npx tsx scripts/test-e2e.ts"
+    "test:e2e": "npx tsx scripts/test-e2e.ts",
+    "format": "npx prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "npx prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:sh": "find . -name '*.sh' -type f -not -path './node_modules/*' -not -path './server/node_modules/*' -not -path './.husky/*' -exec shfmt -w -i 2 -ci -sr {} +",
+    "lint:sh": "find . -name '*.sh' -type f -not -path './node_modules/*' -not -path './server/node_modules/*' -not -path './.husky/*' -exec npx shellcheck {} +",
+    "check:all": "npm run format:check && npm run lint:sh",
+    "fix:all": "npm run format && npm run format:sh"
   },
   "dependencies": {
     "openai": "^6.8.1"
@@ -10,16 +16,15 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.6.2",
-    "shellcheck": "^1.2.2",
-    "shfmt": "^3.8.0"
+    "shellcheck": "^4.1.0"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,md}": [
-      "prettier --write"
+      "npx prettier --write"
     ],
     "*.sh": [
       "shfmt -w -i 2 -ci -sr",
-      "shellcheck"
+      "npx shellcheck"
     ]
   }
 }

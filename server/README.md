@@ -55,6 +55,7 @@ After running `npm run gen-keys`:
 ### Device Management
 
 **POST /device/register**
+
 ```json
 {
   "userId": "user-123",
@@ -67,6 +68,7 @@ After running `npm run gen-keys`:
 Returns pending commands (polling mode).
 
 **POST /device/result**
+
 ```json
 {
   "commandId": "cmd_xxx",
@@ -78,6 +80,7 @@ Returns pending commands (polling mode).
 ### GPT Tool
 
 **POST /tool/tasks**
+
 ```json
 {
   "userId": "user-123",
@@ -90,6 +93,7 @@ Returns pending commands (polling mode).
 ```
 
 Response:
+
 ```json
 {
   "ok": true,
@@ -105,16 +109,16 @@ Returns OpenAI function schema.
 ### Status
 
 **GET /health**
+
 ```json
 { "ok": true, "devices": 3, "pendingCommands": 1 }
 ```
 
 **GET /status**
+
 ```json
 {
-  "devices": [
-    { "userId": "user-123", "registeredAt": "2025-11-09T..." }
-  ],
+  "devices": [{ "userId": "user-123", "registeredAt": "2025-11-09T..." }],
   "pendingCommands": 1,
   "completedResults": 42
 }
@@ -151,6 +155,7 @@ const devices = new Map<string, DeviceInfo>();
 ```
 
 Add rate limiting:
+
 ```bash
 npm install express-rate-limit
 ```
@@ -158,6 +163,7 @@ npm install express-rate-limit
 ## Deployment
 
 Works on any Node.js platform:
+
 - Railway
 - Render
 - Fly.io

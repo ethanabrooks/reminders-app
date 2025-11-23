@@ -75,7 +75,7 @@ while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
     echo "   ✅ Result received!"
     echo ""
     echo "   Result:"
-    echo "$RESULT" | python3 -m json.tool 2>/dev/null || echo "$RESULT"
+    echo "$RESULT" | python3 -m json.tool 2> /dev/null || echo "$RESULT"
     echo ""
     echo "============================================="
     echo "✅ Integration test passed!"

@@ -62,7 +62,7 @@ const completion = await openai.chat.completions.create({
 ### 2. Implement the Function Handler
 
 ```typescript
-import { getUserIdFromSession } from "./auth";
+import { getUserIdFromSession } from './auth';
 
 async function handleAppleReminders(op: string, args: any, userId: string) {
   const response = await fetch('https://your-server.com/tool/tasks', {
@@ -70,13 +70,13 @@ async function handleAppleReminders(op: string, args: any, userId: string) {
     headers: {
       'Content-Type': 'application/json',
       // Add your auth header if needed
-      'Authorization': `Bearer ${getServerToken()}`
+      Authorization: `Bearer ${getServerToken()}`,
     },
     body: JSON.stringify({
-      userId,  // Map to your user system
+      userId, // Map to your user system
       op,
-      args
-    })
+      args,
+    }),
   });
 
   if (!response.ok) {
@@ -97,7 +97,7 @@ async function handleAppleReminders(op: string, args: any, userId: string) {
 // Optional: Wait for device to execute and return result
 async function pollForResult(commandId: string, maxAttempts = 10) {
   for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 500ms
 
     const response = await fetch(`https://your-server.com/tool/result/${commandId}`);
     if (response.ok) {
@@ -119,27 +119,23 @@ async function pollForResult(commandId: string, maxAttempts = 10) {
 ```typescript
 // In your chat loop
 for (const toolCall of completion.choices[0].message.tool_calls || []) {
-  if (toolCall.function.name === "apple_reminders") {
+  if (toolCall.function.name === 'apple_reminders') {
     const { op, args } = JSON.parse(toolCall.function.arguments);
 
     try {
-      const result = await handleAppleReminders(
-        op,
-        args,
-        getUserIdFromSession()
-      );
+      const result = await handleAppleReminders(op, args, getUserIdFromSession());
 
       // Return result to GPT
       messages.push({
-        role: "tool",
+        role: 'tool',
         tool_call_id: toolCall.id,
-        content: JSON.stringify(result)
+        content: JSON.stringify(result),
       });
     } catch (error) {
       messages.push({
-        role: "tool",
+        role: 'tool',
         tool_call_id: toolCall.id,
-        content: JSON.stringify({ error: error.message })
+        content: JSON.stringify({ error: error.message }),
       });
     }
   }
@@ -153,6 +149,7 @@ for (const toolCall of completion.choices[0].message.tool_calls || []) {
 **User:** "Add a reminder to call the dentist tomorrow at 2pm"
 
 **GPT calls:**
+
 ```json
 {
   "op": "create_task",
@@ -164,6 +161,7 @@ for (const toolCall of completion.choices[0].message.tool_calls || []) {
 ```
 
 **Response:**
+
 ```json
 {
   "id": "reminder-uuid",
@@ -181,6 +179,7 @@ for (const toolCall of completion.choices[0].message.tool_calls || []) {
 **User:** "What's on my todo list?"
 
 **GPT calls:**
+
 ```json
 {
   "op": "list_tasks",
@@ -191,6 +190,7 @@ for (const toolCall of completion.choices[0].message.tool_calls || []) {
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -214,6 +214,7 @@ for (const toolCall of completion.choices[0].message.tool_calls || []) {
 **User:** "I called the dentist, mark that done"
 
 **GPT calls:**
+
 ```json
 {
   "op": "complete_task",
@@ -234,6 +235,7 @@ If building a Custom GPT in ChatGPT:
 Go to Configure → Actions → Create new action
 
 **Schema:**
+
 ```yaml
 openapi: 3.0.0
 info:
@@ -258,7 +260,8 @@ paths:
                   description: User identifier
                 op:
                   type: string
-                  enum: [list_lists, list_tasks, create_task, update_task, complete_task, delete_task]
+                  enum:
+                    [list_lists, list_tasks, create_task, update_task, complete_task, delete_task]
                 args:
                   type: object
               required: [userId, op]
@@ -306,7 +309,7 @@ import rateLimit from 'express-rate-limit';
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 10, // 10 requests per minute
-  message: { error: 'Too many requests, please try again later' }
+  message: { error: 'Too many requests, please try again later' },
 });
 
 app.post('/tool/tasks', limiter, async (req, res) => {
@@ -353,7 +356,7 @@ try {
     'No registered device': 'You need to install the iOS app first. Download it from...',
     'JWT expired': 'The command took too long. Please try again.',
     'Task not found': 'That task no longer exists.',
-    'Permission denied': 'The app needs access to Reminders. Open Settings on your iPhone.'
+    'Permission denied': 'The app needs access to Reminders. Open Settings on your iPhone.',
   };
 
   const message = errorMap[error.message] || error.message;
@@ -362,7 +365,7 @@ try {
   return {
     error: true,
     message,
-    hint: 'Try checking the app or your Reminders settings.'
+    hint: 'Try checking the app or your Reminders settings.',
   };
 }
 ```
@@ -373,12 +376,10 @@ try {
 // Mock for testing
 const mockRemindersAPI = {
   lists: [
-    { id: "list-1", title: "Personal" },
-    { id: "list-2", title: "Work" }
+    { id: 'list-1', title: 'Personal' },
+    { id: 'list-2', title: 'Work' },
   ],
-  tasks: [
-    { id: "task-1", listId: "list-1", title: "Buy milk", status: "needsAction" }
-  ]
+  tasks: [{ id: 'task-1', listId: 'list-1', title: 'Buy milk', status: 'needsAction' }],
 };
 
 if (process.env.NODE_ENV === 'test') {
@@ -393,7 +394,7 @@ if (process.env.NODE_ENV === 'test') {
       const newTask = {
         id: `task-${Date.now()}`,
         ...args,
-        status: "needsAction"
+        status: 'needsAction',
       };
       mockRemindersAPI.tasks.push(newTask);
       return res.json({ ok: true, result: newTask });
