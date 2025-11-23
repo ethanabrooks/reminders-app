@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:e2e": "npx tsx scripts/test-e2e.ts"
   },
   "dependencies": {
     "openai": "^6.8.1"

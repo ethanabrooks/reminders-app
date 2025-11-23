@@ -2,7 +2,7 @@
 
 // Node 18+ has global fetch, so we might not need import if running with tsx
 
-const SERVER_URL = 'http://localhost:3000';
+const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000';
 const USER_ID = 'A0FE1D55-DA04-4848-825B-BC76BF0590EE'; // Matching the ID from the user's command
 const POLLING_INTERVAL = 2000; // 2 seconds
 

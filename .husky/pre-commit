@@ -1,2 +1,8 @@
+#!/bin/sh
 npx lint-staged
-cd server && npm run type-check
+
+# Run type-check in server directory (using subshell to preserve pwd)
+(cd server && npm run type-check)
+
+# Run E2E test from root (will skip if OPENAI_API_KEY is not set)
+npm run test:e2e

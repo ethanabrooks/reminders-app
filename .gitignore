@@ -45,3 +45,4 @@ ios-app/*.xcworkspace/xcuserdata/
 # Test artifacts
 coverage/
 .nyc_output/
+.envrc
