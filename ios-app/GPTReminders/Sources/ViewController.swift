@@ -4,6 +4,11 @@ import EventKit
 class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UITextFieldDelegate {
     private let remindersService = RemindersService()
     private var messages: [OpenAIMessage] = []
+    
+    private var displayedMessages: [OpenAIMessage] {
+        messages.filter { $0.role != "tool" }
+    }
+
     private var apiKey: String {
         get { UserDefaults.standard.string(forKey: "openai_api_key") ?? "" }
         set { UserDefaults.standard.set(newValue, forKey: "openai_api_key") }
@@ -181,8 +186,8 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     }
     
     private func scrollToBottom() {
-        guard !messages.isEmpty else { return }
-        let indexPath = IndexPath(row: messages.count - 1, section: 0)
+        guard !displayedMessages.isEmpty else { return }
+        let indexPath = IndexPath(row: displayedMessages.count - 1, section: 0)
         tableView.scrollToRow(at: indexPath, at: .bottom, animated: true)
     }
 
@@ -248,40 +253,40 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     
     private func defineTools() -> [OpenAITool] {
         // We hardcode the schema here to match server/src/openai-schema.ts
-        // For brevity, implementing a subset or full set manually
+        // Using simplified AnyCodable literals
         return [
             OpenAITool(type: "function", function: OpenAIFunctionDefinition(
                 name: "create_reminder_task",
                 description: "Create a new reminder task",
                 parameters: [
-                    "type": AnyCodable("object"),
-                    "properties": AnyCodable([
+                    "type": "object",
+                    "properties": [
                         "title": ["type": "string", "description": "The title of the task"],
                         "notes": ["type": "string", "description": "Notes for the task"],
                         "due_iso": ["type": "string", "description": "ISO 8601 date string"]
-                    ]),
-                    "required": AnyCodable(["title"])
+                    ],
+                    "required": ["title"]
                 ]
             )),
             OpenAITool(type: "function", function: OpenAIFunctionDefinition(
                 name: "list_reminder_tasks",
                 description: "List tasks",
                 parameters: [
-                    "type": AnyCodable("object"),
-                    "properties": AnyCodable([
+                    "type": "object",
+                    "properties": [
                         "status": ["type": "string", "enum": ["needsAction", "completed"]]
-                    ])
+                    ]
                 ]
             )),
              OpenAITool(type: "function", function: OpenAIFunctionDefinition(
                 name: "complete_reminder_task",
                 description: "Mark task as complete",
                 parameters: [
-                    "type": AnyCodable("object"),
-                    "properties": AnyCodable([
+                    "type": "object",
+                    "properties": [
                         "task_id": ["type": "string", "description": "ID of the task"]
-                    ]),
-                    "required": AnyCodable(["task_id"])
+                    ],
+                    "required": ["task_id"]
                 ]
             ))
         ]
@@ -347,12 +352,12 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     // MARK: - TableView
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        messages.count
+        displayedMessages.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ChatCell", for: indexPath) as! ChatCell
-        let msg = messages[indexPath.row]
+        let msg = displayedMessages[indexPath.row]
         cell.configure(with: msg)
         return cell
     }
@@ -433,7 +438,7 @@ class ChatCell: UITableViewCell {
              bubbleView.backgroundColor = .systemGray5
              messageLabel.textColor = .secondaryLabel
              messageLabel.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
-             messageLabel.text = "⚙️ Tool Output: " + (msg.content ?? "")
+             messageLabel.text = "⚙️  ..."
             
             trailingConstraint.isActive = false
             leadingConstraint.isActive = true
@@ -444,7 +449,7 @@ class ChatCell: UITableViewCell {
             messageLabel.text = msg.content
             
             if msg.content == nil && msg.tool_calls != nil {
-                messageLabel.text = "🛠 calling tool..."
+                messageLabel.text = "📱 Interacting with Reminders..."
                 messageLabel.font = .italicSystemFont(ofSize: 14)
             }
             

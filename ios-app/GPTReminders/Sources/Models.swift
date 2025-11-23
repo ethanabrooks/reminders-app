@@ -141,11 +141,25 @@ struct OpenAIChoice: Codable {
 }
 
 // Helper for AnyCodable since Swift Codable doesn't support [String: Any] directly
-struct AnyCodable: Codable {
+struct AnyCodable: Codable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral, ExpressibleByBooleanLiteral, ExpressibleByFloatLiteral, ExpressibleByDictionaryLiteral, ExpressibleByArrayLiteral {
     let value: Any
 
     init(_ value: Any) {
         self.value = value
+    }
+
+    // Literal conformances
+    init(stringLiteral value: String) { self.value = value }
+    init(integerLiteral value: Int) { self.value = value }
+    init(booleanLiteral value: Bool) { self.value = value }
+    init(floatLiteral value: Double) { self.value = value }
+    init(dictionaryLiteral elements: (String, AnyCodable)...) {
+        var dict = [String: Any]()
+        for (k, v) in elements { dict[k] = v.value }
+        self.value = dict
+    }
+    init(arrayLiteral elements: AnyCodable...) {
+        self.value = elements.map { $0.value }
     }
 
     init(from decoder: Decoder) throws {
