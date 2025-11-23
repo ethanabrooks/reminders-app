@@ -190,7 +190,7 @@ app.post('/tool/tasks', async (req: Request, res: Response) => {
   const pushSent = await sendSilentPush(device.apnsToken, { envelope });
 
   if (!pushSent) {
-    console.log('⚠️  Push failed, device will poll for command');
+    // Silent - device will poll instead (expected for Simulator)
   }
 
   // Return optimistically (device will POST result to /device/result)

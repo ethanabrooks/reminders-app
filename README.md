@@ -32,9 +32,9 @@ graph TD
     npm run dev
     ```
 2.  **iOS Setup**:
-    - Open `ios-app/GPTReminders.xcodeproj`
-    - Add `server/keys/public.pem` to the app bundle.
-    - Run on a physical device (Simulators don't support APNs).
+    - See **[`ios-app/SETUP.md`](ios-app/SETUP.md)** for detailed instructions
+    - **Simulator**: Works with polling mode (no APNs needed)
+    - **Physical Device**: Requires APNs configuration for push notifications
 
 ## Security Model
 

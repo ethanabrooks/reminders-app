@@ -7,7 +7,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var commandHandler: CommandHandler?
 
     // Configuration - Replace with your server URL
-    private let serverURL = URL(string: "http://localhost:3000")!
+    private let serverURL = URL(string: "http://192.168.0.228:3000")!
 
     private var publicKeyPEM: String {
         if let filepath = Bundle.main.path(forResource: "public", ofType: "pem"),
@@ -69,6 +69,50 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
     }
 
+    // MARK: - Polling Mode (Simulator Fallback)
+
+    private func startPolling() {
+        print("🔄 Starting polling loop...")
+        Task {
+            while true {
+                try? await Task.sleep(nanoseconds: 2 * 1_000_000_000) // 2 seconds
+                await pollForCommands()
+            }
+        }
+    }
+
+    private func pollForCommands() async {
+        guard let userId = UIDevice.current.identifierForVendor?.uuidString else { return }
+        let url = serverURL.appendingPathComponent("/device/commands/\(userId)")
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            
+            // Parse response: { "commands": [ { "id": "...", "envelope": "..." } ] }
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let commands = json["commands"] as? [[String: Any]] else {
+                return
+            }
+            
+            for cmd in commands {
+                if let envelope = cmd["envelope"] as? String {
+                    print("📥 Received command via polling")
+                    
+                    if let handler = commandHandler {
+                        do {
+                            let result = try await handler.processCommand(envelope: envelope)
+                            print("✅ Command processed: \(result)")
+                        } catch {
+                            print("❌ Command failed: \(error)")
+                        }
+                    }
+                }
+            }
+        } catch {
+            print("⚠️ Polling error: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - APNs Registration
 
     func application(
@@ -92,6 +136,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         Task {
             await registerDevice(apnsToken: "simulator-polling-mode")
+            // Start polling since push failed
+            startPolling()
         }
     }
 

@@ -13,6 +13,7 @@
 		AA0004 /* RemindersService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0014 /* RemindersService.swift */; };
 		AA0005 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0015 /* ViewController.swift */; };
 		AA0006 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0017 /* Models.swift */; };
+		AAE5BCDD2ED3B86C00D30379 /* public.pem in Resources */ = {isa = PBXBuildFile; fileRef = AAE5BCDC2ED3B86C00D30379 /* public.pem */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 		AA0016 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA0017 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		AA0020 /* GPTReminders.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GPTReminders.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AAE5BCDC2ED3B86C00D30379 /* public.pem */ = {isa = PBXFileReference; lastKnownFileType = text; path = public.pem; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +50,7 @@
 		AA0041 /* GPTReminders */ = {
 			isa = PBXGroup;
 			children = (
+				AAE5BCDC2ED3B86C00D30379 /* public.pem */,
 				AA0043 /* Sources */,
 				AA0044 /* Supporting */,
 			);
@@ -142,6 +145,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AAE5BCDD2ED3B86C00D30379 /* public.pem in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -303,7 +307,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.example.GPTReminders";
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.GPTReminders;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -331,7 +335,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.example.GPTReminders";
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.GPTReminders;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

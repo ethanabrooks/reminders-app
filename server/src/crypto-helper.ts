@@ -27,11 +27,9 @@ function generateKeypair() {
   console.log('✅ Generated RSA keypair:');
   console.log(`   Private key: ${join(keysDir, 'private.pem')}`);
   console.log(`   Public key:  ${join(keysDir, 'public.pem')}`);
-  console.log('\n📱 iOS Setup:');
-  console.log('   1. Copy server/keys/public.pem to ios-app/GPTReminders/Resources/public.pem');
-  console.log("   2. Open project in Xcode and add the file (File > Add Files to 'GPTReminders')");
-  console.log("   3. Ensure it's included in 'Copy Bundle Resources' build phase");
-  console.log('\n🔐 Add to .env:');
+  console.log('\n📱 Next steps:');
+  console.log('   See ios-app/SETUP.md for detailed iOS app setup instructions');
+  console.log('\n🔐 Optional: Add to server/.env for production:');
   console.log(`   COMMAND_SIGNING_PRIVATE="${privateKey.replace(/\n/g, '\\n')}"`);
 }
 

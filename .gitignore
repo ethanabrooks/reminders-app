@@ -3,6 +3,7 @@ node_modules/
 server/node_modules/
 
 # Build outputs
+build/
 server/dist/
 ios-app/build/
 ios-app/DerivedData/

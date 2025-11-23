@@ -10,8 +10,10 @@ export function initializeAPNs() {
   const production = process.env.APNS_PRODUCTION === 'true';
 
   if (!keyPath || !keyId || !teamId) {
-    console.warn('⚠️  APNs not configured. Set APNS_KEY_PATH, APNS_KEY_ID, APNS_TEAM_ID in .env');
-    console.warn('   Push notifications will be skipped. Use polling mode in iOS app.');
+    console.log(
+      'ℹ️  APNs not configured (expected for Simulator). Set APNS_KEY_PATH, APNS_KEY_ID, APNS_TEAM_ID in .env for device push.',
+    );
+    console.log('   App will use polling mode (checks for commands every 2 seconds).');
     return null;
   }
 
@@ -33,7 +35,7 @@ export async function sendSilentPush(
   payload: { envelope: string },
 ): Promise<boolean> {
   if (!apnProvider) {
-    console.log('⚠️  APNs not available, skipping push');
+    // Silent failure - app will poll instead
     return false;
   }
 
