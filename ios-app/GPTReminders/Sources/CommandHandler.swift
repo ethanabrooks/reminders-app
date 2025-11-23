@@ -1,5 +1,5 @@
-import Foundation
 import EventKit
+import Foundation
 
 /// Handles incoming commands from the server
 final class CommandHandler {
@@ -17,7 +17,7 @@ final class CommandHandler {
     func processCommand(envelope: String) async throws -> Any {
         // Verify JWT signature and get raw payload data
         let payloadData = try jwtVerifier.verify(token: envelope)
-        
+
         // Decode metadata first to determine the operation kind
         let meta = try JSONDecoder().decode(CommandMetadata.self, from: payloadData)
         let commandId = meta.id
@@ -29,34 +29,39 @@ final class CommandHandler {
 
         // Execute command and get result as an Encodable (converted to Any for transport)
         let resultAny: Any
-        
+
         switch meta.kind {
         case .listLists:
             let res = remindersService.listCalendarsDTO()
             resultAny = try encodeToAny(res)
 
         case .listTasks:
-            let cmd = try JSONDecoder().decode(CommandWithPayload<ListTasksPayload>.self, from: payloadData)
+            let cmd = try JSONDecoder().decode(
+                CommandWithPayload<ListTasksPayload>.self, from: payloadData)
             let res = try handleListTasks(payload: cmd.payload)
             resultAny = try encodeToAny(res)
 
         case .createTask:
-            let cmd = try JSONDecoder().decode(CommandWithPayload<CreateTaskPayload>.self, from: payloadData)
+            let cmd = try JSONDecoder().decode(
+                CommandWithPayload<CreateTaskPayload>.self, from: payloadData)
             let res = try handleCreateTask(payload: cmd.payload)
             resultAny = try encodeToAny(res)
 
         case .updateTask:
-            let cmd = try JSONDecoder().decode(CommandWithPayload<UpdateTaskPayload>.self, from: payloadData)
+            let cmd = try JSONDecoder().decode(
+                CommandWithPayload<UpdateTaskPayload>.self, from: payloadData)
             let res = try handleUpdateTask(payload: cmd.payload)
             resultAny = try encodeToAny(res)
 
         case .completeTask:
-            let cmd = try JSONDecoder().decode(CommandWithPayload<TaskActionPayload>.self, from: payloadData)
+            let cmd = try JSONDecoder().decode(
+                CommandWithPayload<TaskActionPayload>.self, from: payloadData)
             let res = try handleCompleteTask(payload: cmd.payload)
             resultAny = try encodeToAny(res)
 
         case .deleteTask:
-            let cmd = try JSONDecoder().decode(CommandWithPayload<TaskActionPayload>.self, from: payloadData)
+            let cmd = try JSONDecoder().decode(
+                CommandWithPayload<TaskActionPayload>.self, from: payloadData)
             let res = try handleDeleteTask(payload: cmd.payload)
             resultAny = try encodeToAny(res)
         }
@@ -66,7 +71,7 @@ final class CommandHandler {
 
         return resultAny
     }
-    
+
     private func encodeToAny<T: Encodable>(_ value: T) throws -> Any {
         let data = try JSONEncoder().encode(value)
         return try JSONSerialization.jsonObject(with: data)
@@ -118,7 +123,8 @@ final class CommandHandler {
 
     // MARK: - Result Reporting
 
-    private func sendResult(commandId: String, success: Bool, result: Any?, error: String? = nil) async throws {
+    private func sendResult(commandId: String, success: Bool, result: Any?, error: String? = nil)
+        async throws {
         let url = serverURL.appendingPathComponent("/device/result")
 
         var requestBody: [String: Any] = [
@@ -143,7 +149,8 @@ final class CommandHandler {
         let (_, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse,
-              (200...299).contains(httpResponse.statusCode) else {
+            (200...299).contains(httpResponse.statusCode)
+        else {
             print("⚠️ Failed to send result to server")
             return
         }
