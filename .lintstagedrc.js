@@ -7,7 +7,7 @@ module.exports = {
     return `cd server && npx eslint --fix ${relativeFiles.join(' ')}`;
   },
   'ios-app/**/*.swift': (filenames) => {
-     return `if command -v swiftlint >/dev/null; then swiftlint lint --fix ${filenames.join(' ')}; else echo "⚠️ SwiftLint not installed. Skipping iOS linting."; fi`;
+     return `swiftlint lint --fix ${filenames.join(' ')}`;
   }
 }
 

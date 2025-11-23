@@ -11,8 +11,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     private var publicKeyPEM: String {
         if let filepath = Bundle.main.path(forResource: "public", ofType: "pem"),
-            let contents = try? String(contentsOfFile: filepath)
-        {
+            let contents = try? String(contentsOfFile: filepath) {
             return contents
         }
         // Fallback or empty string (will cause CommandHandler to fail)
@@ -24,15 +23,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        // Initialize command handler
-        do {
-            commandHandler = try CommandHandler(
-                publicKeyPEM: publicKeyPEM,
-                serverURL: serverURL
-            )
-        } catch {
-            print("❌ Failed to initialize command handler: \(error)")
-        }
+        // Initialize dependencies
+        self.window = makeWindow()
+        self.commandHandler = makeCommandHandler()
 
         // Request notification permissions
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) {
@@ -47,16 +40,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             UIApplication.shared.registerForRemoteNotifications()
         }
 
-        // Setup UI
-        setupRootViewController()
-
         return true
     }
 
-    private func setupRootViewController() {
-        window = UIWindow(frame: UIScreen.main.bounds)
-        window?.rootViewController = ViewController()
-        window?.makeKeyAndVisible()
+    private func makeCommandHandler() -> CommandHandler? {
+        do {
+            return try CommandHandler(
+                publicKeyPEM: publicKeyPEM,
+                serverURL: serverURL
+            )
+        } catch {
+            print("❌ Failed to initialize command handler: \(error)")
+            return nil
+        }
+    }
+
+    private func makeWindow() -> UIWindow {
+        let window = UIWindow(frame: UIScreen.main.bounds)
+        window.rootViewController = ViewController()
+        window.makeKeyAndVisible()
+        return window
     }
 
     // MARK: - APNs Registration
@@ -133,7 +136,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
         let body: [String: String] = [
             "userId": userId,
-            "apnsToken": apnsToken,
+            "apnsToken": apnsToken
         ]
 
         do {

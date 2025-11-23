@@ -53,13 +53,6 @@ async function waitForDevice(url: string, timeoutMs = 10000) {
 async function runTest() {
   console.log('🚀 Starting E2E Integration Test...');
   
-  // Check prerequisites
-  if (!process.env.OPENAI_API_KEY) {
-    console.warn('⚠️  OPENAI_API_KEY not set. Skipping GPT integration test.');
-    console.log('   (To run locally: export OPENAI_API_KEY=... and try again)');
-    process.exit(0);
-  }
-
   try {
     // 1. Start Server
     console.log('Starting server...');
