@@ -6,6 +6,7 @@ import { join } from 'path';
 import dotenv from 'dotenv';
 import { CommandEnvelope, DeviceInfo, CommandResult, CommandKind } from './types';
 import { initializeAPNs, sendSilentPush, shutdownAPNs } from './apns';
+import { openAIFunctionSchema } from './openai-schema';
 
 dotenv.config();
 
@@ -113,9 +114,39 @@ app.get('/device/commands/:userId', (req: Request, res: Response) => {
 
 // ==================== GPT Tool Endpoint ====================
 
+// Map OpenAI function names to internal operation codes
+const FUNCTION_TO_OP: Record<string, CommandKind> = {
+  list_reminder_lists: 'list_lists',
+  list_reminder_tasks: 'list_tasks',
+  create_reminder_task: 'create_task',
+  update_reminder_task: 'update_task',
+  complete_reminder_task: 'complete_task',
+  delete_reminder_task: 'delete_task',
+};
+
 // Main endpoint that GPT calls
 app.post('/tool/tasks', async (req: Request, res: Response) => {
-  const { userId, op, args } = req.body;
+  // Support both OpenAI function calling format and legacy format
+  let op: CommandKind;
+  let args: Record<string, unknown>;
+
+  if (req.body.function && req.body.arguments) {
+    // OpenAI function calling format: { function: "create_reminder_task", arguments: {...} }
+    const functionName = req.body.function;
+    op = FUNCTION_TO_OP[functionName];
+    if (!op) {
+      return res.status(400).json({ error: `Unknown function: ${functionName}` });
+    }
+    args = req.body.arguments || {};
+  } else if (req.body.op) {
+    // Legacy format: { op: "create_task", args: {...} }
+    op = req.body.op;
+    args = req.body.args || {};
+  } else {
+    return res.status(400).json({ error: 'Missing "function" or "op" field' });
+  }
+
+  const { userId } = req.body;
 
   // In production, verify user auth token here
   if (!userId) {
@@ -149,7 +180,7 @@ app.post('/tool/tasks', async (req: Request, res: Response) => {
   const envelope = signCommand({
     id: commandId,
     kind: op,
-    payload: args || {},
+    payload: args,
   });
 
   // Store pending command
@@ -185,35 +216,9 @@ app.get('/tool/result/:commandId', (req: Request, res: Response) => {
 
 // ==================== OpenAI Tool Schema ====================
 
-// Return the OpenAI function schema
+// Return the OpenAI function schema (array of functions)
 app.get('/tool/schema', (_req: Request, res: Response) => {
-  res.json({
-    name: 'apple_reminders',
-    description:
-      "Read and write Apple Reminders through a trusted bridge app on the user's iPhone.",
-    parameters: {
-      type: 'object',
-      properties: {
-        op: {
-          type: 'string',
-          enum: [
-            'list_lists',
-            'list_tasks',
-            'create_task',
-            'update_task',
-            'complete_task',
-            'delete_task',
-          ],
-          description: 'Operation to perform',
-        },
-        args: {
-          type: 'object',
-          description: 'Arguments for the operation',
-        },
-      },
-      required: ['op'],
-    },
-  });
+  res.json(openAIFunctionSchema);
 });
 
 // ==================== Health & Status ====================
