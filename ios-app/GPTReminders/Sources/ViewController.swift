@@ -272,8 +272,10 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
                     "properties": [
                         "title": ["type": "string", "description": "The title of the task"],
                         "notes": ["type": "string", "description": "Notes for the task"],
+                        "list_id": ["type": "string", "description": "Optional: ID of the reminder list to add the task to. Get valid list IDs by calling list_reminder_lists first."],
                         "remind_me_date": ["type": "string", "description": "Reminder Date (YYYY-MM-DD)"],
-                        "remind_me_time": ["type": "string", "description": "Reminder Time (HH:mm:ss)"]
+                        "remind_me_time": ["type": "string", "description": "Reminder Time (HH:mm:ss)"],
+                        "priority": ["type": "string", "enum": ["none", "low", "medium", "high"], "description": "Optional: Priority level for the task. Defaults to 'none' if omitted."]
                     ],
                     "required": ["title"]
                 ]
@@ -284,6 +286,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
                 parameters: [
                     "type": "object",
                     "properties": [
+                        "list_id": ["type": "string", "description": "Optional: Filter by specific list ID. Get valid list IDs by calling list_reminder_lists first."],
                         "status": ["type": "string", "enum": ["needsAction", "completed"]]
                     ]
                 ]
@@ -344,7 +347,8 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
                     notes: args.notes,
                     listId: args.list_id,
                     dueDateISO: args.remind_me_date,
-                    dueTimeISO: args.remind_me_time
+                    dueTimeISO: args.remind_me_time,
+                    priority: args.priority
                 )
                 let dto = remindersService.toDTO(reminder)
                 return toJson(dto)
@@ -577,6 +581,7 @@ class ChatCell: UITableViewCell {
 class TaskView: UIView {
     private let titleLabel = UILabel()
     private let statusIcon = UILabel()
+    private let priorityIcon = UILabel()
     private let dateLabel = UILabel()
     private let notesLabel = UILabel()
     
@@ -609,12 +614,17 @@ class TaskView: UIView {
         statusIcon.font = .systemFont(ofSize: 14)
         statusIcon.translatesAutoresizingMaskIntoConstraints = false
         
+        priorityIcon.font = .systemFont(ofSize: 14)
+        priorityIcon.textAlignment = .center
+        priorityIcon.translatesAutoresizingMaskIntoConstraints = false
+        
         let textStack = UIStackView(arrangedSubviews: [titleLabel, dateLabel, notesLabel])
         textStack.axis = .vertical
         textStack.spacing = 2
         textStack.translatesAutoresizingMaskIntoConstraints = false
         
         addSubview(statusIcon)
+        addSubview(priorityIcon)
         addSubview(textStack)
         
         NSLayoutConstraint.activate([
@@ -622,7 +632,12 @@ class TaskView: UIView {
             statusIcon.topAnchor.constraint(equalTo: topAnchor, constant: 8),
             statusIcon.widthAnchor.constraint(equalToConstant: 24),
             
-            textStack.leadingAnchor.constraint(equalTo: statusIcon.trailingAnchor, constant: 4),
+            priorityIcon.leadingAnchor.constraint(equalTo: statusIcon.trailingAnchor, constant: 4),
+            priorityIcon.centerYAnchor.constraint(equalTo: statusIcon.centerYAnchor),
+            priorityIcon.widthAnchor.constraint(equalToConstant: 24),
+            priorityIcon.heightAnchor.constraint(equalToConstant: 24),
+            
+            textStack.leadingAnchor.constraint(equalTo: priorityIcon.trailingAnchor, constant: 4),
             textStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
             textStack.topAnchor.constraint(equalTo: topAnchor, constant: 8),
             textStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8)
@@ -632,6 +647,40 @@ class TaskView: UIView {
     func configure(with task: ReminderDTO) {
         titleLabel.text = task.title ?? "Untitled Task"
         statusIcon.text = (task.status == "completed") ? "✅" : "⭕️"
+        
+        // Set priority emoji
+        // Debug: log what priority we're receiving
+        print("🔍 Task '\(task.title ?? "unknown")': priority field = '\(task.priority ?? "nil")'")
+        
+        if let priority = task.priority, !priority.isEmpty {
+            let priorityLower = priority.lowercased()
+            print("   Processing priority: '\(priority)' -> '\(priorityLower)'")
+            switch priorityLower {
+            case "high":
+                priorityIcon.text = "🔴"
+                print("   ✅ Set to 🔴")
+            case "medium":
+                priorityIcon.text = "🟡"
+                print("   ✅ Set to 🟡")
+            case "low":
+                priorityIcon.text = "🟢"
+                print("   ✅ Set to 🟢")
+            case "none":
+                priorityIcon.text = ""
+                print("   ⚪ Set to empty (none)")
+            default:
+                // Debug: log unexpected priority values
+                print("⚠️ Task '\(task.title ?? "unknown")': Unexpected priority string: '\(priority)' (lowercased: '\(priorityLower)')")
+                priorityIcon.text = ""
+            }
+        } else {
+            print("   ⚠️ Priority is nil or empty")
+            priorityIcon.text = ""
+        }
+        
+        let shouldHide = priorityIcon.text?.isEmpty ?? true
+        priorityIcon.isHidden = shouldHide
+        print("   Priority icon hidden: \(shouldHide), text: '\(priorityIcon.text ?? "nil")'")
         
         if let dueISO = task.dueISO, let date = ISO8601DateFormatter().date(from: dueISO) {
             let formatter = DateFormatter()

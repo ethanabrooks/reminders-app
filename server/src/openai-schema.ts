@@ -71,6 +71,12 @@ export const openAIFunctionSchema = {
               description:
                 'Optional: The time to associate with this task (HH:mm:ss). Example: "14:30:00". If omitted, the task is associated with the whole day.',
             },
+            priority: {
+              type: 'string' as const,
+              enum: ['none', 'low', 'medium', 'high'],
+              description:
+                'Optional: Priority level for the task. "none" = no priority, "low" = low priority, "medium" = medium priority, "high" = high priority. If omitted, defaults to "none".',
+            },
           },
           required: ['title'],
         },
@@ -104,6 +110,12 @@ export const openAIFunctionSchema = {
             remind_me_time: {
               type: 'string' as const,
               description: 'Optional: New time to associate with this task (HH:mm:ss).',
+            },
+            priority: {
+              type: 'string' as const,
+              enum: ['none', 'low', 'medium', 'high'],
+              description:
+                'Optional: Priority level for the task. "none" = no priority, "low" = low priority, "medium" = medium priority, "high" = high priority.',
             },
           },
           required: ['task_id'],

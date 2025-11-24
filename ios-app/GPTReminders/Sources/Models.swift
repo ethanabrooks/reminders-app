@@ -31,6 +31,7 @@ struct CreateTaskPayload: Decodable {
     let list_id: String?
     let remind_me_date: String?
     let remind_me_time: String?
+    let priority: String?
 }
 
 struct UpdateTaskPayload: Decodable {
@@ -39,6 +40,7 @@ struct UpdateTaskPayload: Decodable {
     let notes: String?
     let remind_me_date: String?
     let remind_me_time: String?
+    let priority: String?
 }
 
 struct TaskActionPayload: Decodable {
@@ -69,6 +71,7 @@ struct ReminderDTO: Codable {
     let status: String?
     let dueISO: String?
     let completedISO: String?
+    let priority: String?
     let url: String?
 }
 

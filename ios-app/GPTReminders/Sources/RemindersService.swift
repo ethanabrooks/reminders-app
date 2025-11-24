@@ -45,7 +45,8 @@ final class RemindersService {
         notes: String?,
         listId: String?,
         dueDateISO: String?,
-        dueTimeISO: String?
+        dueTimeISO: String?,
+        priority: String?
     ) throws -> EKReminder {
         let reminder = EKReminder(eventStore: store)
         reminder.title = title
@@ -105,6 +106,11 @@ final class RemindersService {
                 reminder.addAlarm(EKAlarm(absoluteDate: finalDate))
             }
         }
+        
+        // Set priority
+        if let priorityStr = priority {
+            reminder.priority = priorityToInt(priorityStr)
+        }
 
         try store.save(reminder, commit: true)
         return reminder
@@ -150,7 +156,8 @@ final class RemindersService {
         title: String?,
         notes: String?,
         dueDateISO: String?,
-        dueTimeISO: String?
+        dueTimeISO: String?,
+        priority: String?
     ) throws -> EKReminder {
         guard let reminder = store.calendarItem(withIdentifier: taskId) as? EKReminder else {
             throw RemindersError.taskNotFound(taskId)
@@ -217,6 +224,11 @@ final class RemindersService {
                 }
             }
         }
+        
+        // Update priority if provided
+        if let priorityStr = priority {
+            reminder.priority = priorityToInt(priorityStr)
+        }
 
         try store.save(reminder, commit: true)
         return reminder
@@ -228,6 +240,41 @@ final class RemindersService {
         }
 
         try store.remove(reminder, commit: true)
+    }
+
+    // MARK: - Priority Helpers
+    
+    private func priorityToInt(_ priority: String) -> Int {
+        switch priority.lowercased() {
+        case "high":
+            return 1
+        case "medium":
+            return 5
+        case "low":
+            return 9
+        case "none", "":
+            return 0
+        default:
+            return 0
+        }
+    }
+    
+    private func intToPriority(_ priority: Int) -> String {
+        // EventKit priority: 0=none, 1=high, 5=medium, 9=low
+        switch priority {
+        case 1:
+            return "high"
+        case 5:
+            return "medium"
+        case 9:
+            return "low"
+        case 0:
+            return "none"
+        default:
+            // Handle any unexpected values - treat as none
+            print("⚠️ Unexpected priority value: \(priority), defaulting to 'none'")
+            return "none"
+        }
     }
 
     // MARK: - DTO Conversion
@@ -244,6 +291,12 @@ final class RemindersService {
             completedISO = ISO8601DateFormatter().string(from: date)
         }
 
+        let priorityString = intToPriority(reminder.priority)
+        // Debug: log priority conversion
+        if reminder.priority != 0 {
+            print("📋 Task '\(reminder.title ?? "unknown")': EventKit priority=\(reminder.priority) -> '\(priorityString)'")
+        }
+        
         return ReminderDTO(
             id: reminder.calendarItemIdentifier,
             listId: reminder.calendar.calendarIdentifier,
@@ -252,6 +305,7 @@ final class RemindersService {
             status: reminder.isCompleted ? "completed" : "needsAction",
             dueISO: dueISO,
             completedISO: completedISO,
+            priority: priorityString,
             url: "gptreminders://task/\(reminder.calendarItemIdentifier)"
         )
     }

@@ -10,6 +10,7 @@ export interface NormalizedTask {
   status: TaskStatus;
   dueISO?: string; // RFC3339
   completedISO?: string;
+  priority?: 'none' | 'low' | 'medium' | 'high';
   url?: string; // app deeplink (e.g., myapp://task/<id>)
 }
 
@@ -45,6 +46,7 @@ export interface CreateTaskPayload {
   notes?: string;
   list_id?: string;
   due_iso?: string;
+  priority?: 'none' | 'low' | 'medium' | 'high';
 }
 
 export interface UpdateTaskPayload {
@@ -52,6 +54,7 @@ export interface UpdateTaskPayload {
   title?: string;
   notes?: string;
   due_iso?: string;
+  priority?: 'none' | 'low' | 'medium' | 'high';
 }
 
 export interface CompleteTaskPayload {
