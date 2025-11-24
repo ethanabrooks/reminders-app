@@ -59,29 +59,49 @@ final class RemindersService {
         }
 
         // Set due date and alarm
-        if let dateISO = dueDateISO, let date = ISO8601DateFormatter().date(from: dateISO) {
-            var components = Calendar.current.dateComponents(
-                [.year, .month, .day],
-                from: date
-            )
+        var components: DateComponents?
+        
+        if let dateISO = dueDateISO {
+            // Parse date-only string (YYYY-MM-DD)
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            dateFormatter.locale = Locale(identifier: "en_US_POSIX")
             
-            if let timeISO = dueTimeISO {
-                // Expected format: HH:mm:ss or HH:mm
-                let parts = timeISO.split(separator: ":")
-                if parts.count >= 2,
-                   let hour = Int(parts[0]),
-                   let minute = Int(parts[1]) {
-                    components.hour = hour
-                    components.minute = minute
-                    if parts.count > 2, let second = Int(parts[2]) {
-                        components.second = second
-                    }
-                }
+            if let date = dateFormatter.date(from: dateISO) {
+                components = Calendar.current.dateComponents(
+                    [.year, .month, .day],
+                    from: date
+                )
             }
+        } else if let timeISO = dueTimeISO {
+            // If only time is provided, default to today's date
+            components = Calendar.current.dateComponents(
+                [.year, .month, .day],
+                from: Date()
+            )
+        }
+        
+        // Add time components if provided
+        if let timeISO = dueTimeISO, var comps = components {
+            // Expected format: HH:mm:ss or HH:mm
+            let parts = timeISO.split(separator: ":")
+            if parts.count >= 2,
+               let hour = Int(parts[0]),
+               let minute = Int(parts[1]) {
+                comps.hour = hour
+                comps.minute = minute
+                if parts.count > 2, let second = Int(parts[2]) {
+                    comps.second = second
+                }
+                components = comps
+            }
+        }
+        
+        // Set the date components and alarm if we have valid components
+        if let comps = components {
+            reminder.dueDateComponents = comps
             
-            reminder.dueDateComponents = components
-            
-            if let finalDate = Calendar.current.date(from: components) {
+            if let finalDate = Calendar.current.date(from: comps) {
                 reminder.addAlarm(EKAlarm(absoluteDate: finalDate))
             }
         }
@@ -140,9 +160,12 @@ final class RemindersService {
         if let n = notes { reminder.notes = n }
 
         if let dateISO = dueDateISO {
-            // If date is provided, we update the date.
-            // If it's a valid date string:
-            if let date = ISO8601DateFormatter().date(from: dateISO) {
+            // Parse date-only string (YYYY-MM-DD)
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+            
+            if let date = dateFormatter.date(from: dateISO) {
                 // Start with just the date components from the new date
                 var components = Calendar.current.dateComponents(
                     [.year, .month, .day],
@@ -162,12 +185,7 @@ final class RemindersService {
                         }
                     }
                 } else {
-                    // If no new time is provided, we should ideally preserve the existing time?
-                    // Or does setting a new date imply clearing the time unless specified?
-                    // For now, let's say if only date is passed, it becomes an all-day task (or time is cleared)
-                    // unless we want to try and merge with existing time components.
-                    // Given the schema description "If omitted, the reminder is for the whole day",
-                    // clearing time components is the correct behavior.
+                    // If no new time is provided, it becomes an all-day task (time is cleared)
                 }
                 
                 reminder.dueDateComponents = components
