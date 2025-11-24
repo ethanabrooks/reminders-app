@@ -488,11 +488,18 @@ class ChatCell: UITableViewCell {
             leadingConstraint.isActive = false
             trailingConstraint.isActive = true
         } else if msg.role == "tool" {
-            // This should be filtered out by displayedMessages, but handled just in case
+            // Tool output - only shown in DEBUG_TOOLS mode
+            #if DEBUG_TOOLS
             bubbleView.backgroundColor = .systemGray5
-             messageLabel.textColor = .secondaryLabel
-             messageLabel.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
-             messageLabel.text = "⚙️ Tool Output: \(msg.content ?? "Unknown")"
+            messageLabel.textColor = .secondaryLabel
+            messageLabel.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+            messageLabel.text = "⚙️ Tool Output:\n\(msg.content ?? "Unknown")"
+            #else
+            // Should not reach here as displayedMessages filters these out
+            bubbleView.backgroundColor = .systemGray5
+            messageLabel.textColor = .secondaryLabel
+            messageLabel.text = "⚙️ Tool Output"
+            #endif
             
             trailingConstraint.isActive = false
             leadingConstraint.isActive = true
@@ -514,10 +521,31 @@ class ChatCell: UITableViewCell {
                     }
                 }
                 
+                #if DEBUG_TOOLS
+                // In debug mode, show tool call details
+                if msg.content == nil || msg.content?.isEmpty == true {
+                    var toolCallText = "🔧 Tool Calls:\n"
+                    for call in toolCalls {
+                        toolCallText += "• \(call.function.name)(\(call.function.arguments))\n"
+                    }
+                    messageLabel.text = toolCallText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    messageLabel.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+                } else if tasksStackView.isHidden {
+                    // Show both content and tool calls
+                    var toolCallText = msg.content ?? ""
+                    toolCallText += "\n\n🔧 Tool Calls:\n"
+                    for call in toolCalls {
+                        toolCallText += "• \(call.function.name)(\(call.function.arguments))\n"
+                    }
+                    messageLabel.text = toolCallText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    messageLabel.font = .systemFont(ofSize: 14)
+                }
+                #else
                 if msg.content == nil && tasksStackView.isHidden && msg.tool_calls != nil {
                      messageLabel.text = "📱 Interacting with Reminders..."
                      messageLabel.font = .italicSystemFont(ofSize: 14)
                 }
+                #endif
             }
             
             trailingConstraint.isActive = false

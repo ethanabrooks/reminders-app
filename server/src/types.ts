@@ -26,7 +26,6 @@ export type CommandKind =
   | 'complete_task'
   | 'delete_task';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface CommandEnvelope<T = any> {
   id: string; // server command id
   kind: CommandKind;
@@ -45,16 +44,14 @@ export interface CreateTaskPayload {
   title: string;
   notes?: string;
   list_id?: string;
-  remind_me_date?: string;
-  remind_me_time?: string;
+  due_iso?: string;
 }
 
 export interface UpdateTaskPayload {
   task_id: string;
   title?: string;
   notes?: string;
-  remind_me_date?: string;
-  remind_me_time?: string;
+  due_iso?: string;
 }
 
 export interface CompleteTaskPayload {
@@ -76,7 +73,7 @@ export interface DeviceInfo {
 export interface CommandResult {
   commandId: string;
   success: boolean;
-  result?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  result?: any;
   error?: string;
   timestamp: number;
 }
