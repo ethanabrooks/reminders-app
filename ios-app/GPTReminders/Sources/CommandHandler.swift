@@ -96,7 +96,8 @@ final class CommandHandler {
             title: payload.title,
             notes: payload.notes,
             listId: payload.list_id,
-            dueISO: payload.due_iso
+            dueDateISO: payload.remind_me_date,
+            dueTimeISO: payload.remind_me_time
         )
         return remindersService.toDTO(reminder)
     }
@@ -106,7 +107,8 @@ final class CommandHandler {
             taskId: payload.task_id,
             title: payload.title,
             notes: payload.notes,
-            dueISO: payload.due_iso
+            dueDateISO: payload.remind_me_date,
+            dueTimeISO: payload.remind_me_time
         )
         return remindersService.toDTO(reminder)
     }

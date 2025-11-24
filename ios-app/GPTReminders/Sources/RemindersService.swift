@@ -39,12 +39,13 @@ final class RemindersService {
     }
 
     // MARK: - Task CRUD
-
+    
     func createReminder(
         title: String,
         notes: String?,
         listId: String?,
-        dueISO: String?
+        dueDateISO: String?,
+        dueTimeISO: String?
     ) throws -> EKReminder {
         let reminder = EKReminder(eventStore: store)
         reminder.title = title
@@ -58,12 +59,31 @@ final class RemindersService {
         }
 
         // Set due date and alarm
-        if let iso = dueISO, let date = ISO8601DateFormatter().date(from: iso) {
-            reminder.dueDateComponents = Calendar.current.dateComponents(
-                [.year, .month, .day, .hour, .minute],
+        if let dateISO = dueDateISO, let date = ISO8601DateFormatter().date(from: dateISO) {
+            var components = Calendar.current.dateComponents(
+                [.year, .month, .day],
                 from: date
             )
-            reminder.addAlarm(EKAlarm(absoluteDate: date))
+            
+            if let timeISO = dueTimeISO {
+                // Expected format: HH:mm:ss or HH:mm
+                let parts = timeISO.split(separator: ":")
+                if parts.count >= 2,
+                   let hour = Int(parts[0]),
+                   let minute = Int(parts[1]) {
+                    components.hour = hour
+                    components.minute = minute
+                    if parts.count > 2, let second = Int(parts[2]) {
+                        components.second = second
+                    }
+                }
+            }
+            
+            reminder.dueDateComponents = components
+            
+            if let finalDate = Calendar.current.date(from: components) {
+                reminder.addAlarm(EKAlarm(absoluteDate: finalDate))
+            }
         }
 
         try store.save(reminder, commit: true)
@@ -109,7 +129,8 @@ final class RemindersService {
         taskId: String,
         title: String?,
         notes: String?,
-        dueISO: String?
+        dueDateISO: String?,
+        dueTimeISO: String?
     ) throws -> EKReminder {
         guard let reminder = store.calendarItem(withIdentifier: taskId) as? EKReminder else {
             throw RemindersError.taskNotFound(taskId)
@@ -118,17 +139,64 @@ final class RemindersService {
         if let t = title { reminder.title = t }
         if let n = notes { reminder.notes = n }
 
-        if let iso = dueISO {
-            if let date = ISO8601DateFormatter().date(from: iso) {
-                reminder.dueDateComponents = Calendar.current.dateComponents(
-                    [.year, .month, .day, .hour, .minute],
+        if let dateISO = dueDateISO {
+            // If date is provided, we update the date.
+            // If it's a valid date string:
+            if let date = ISO8601DateFormatter().date(from: dateISO) {
+                // Start with just the date components from the new date
+                var components = Calendar.current.dateComponents(
+                    [.year, .month, .day],
                     from: date
                 )
-                // Replace alarms for simplicity
-                reminder.alarms = [EKAlarm(absoluteDate: date)]
-            } else {
-                reminder.dueDateComponents = nil
-                reminder.alarms = []
+                
+                // If a new time is provided, use it.
+                if let timeISO = dueTimeISO {
+                    let parts = timeISO.split(separator: ":")
+                    if parts.count >= 2,
+                       let hour = Int(parts[0]),
+                       let minute = Int(parts[1]) {
+                        components.hour = hour
+                        components.minute = minute
+                        if parts.count > 2, let second = Int(parts[2]) {
+                            components.second = second
+                        }
+                    }
+                } else {
+                    // If no new time is provided, we should ideally preserve the existing time?
+                    // Or does setting a new date imply clearing the time unless specified?
+                    // For now, let's say if only date is passed, it becomes an all-day task (or time is cleared)
+                    // unless we want to try and merge with existing time components.
+                    // Given the schema description "If omitted, the reminder is for the whole day",
+                    // clearing time components is the correct behavior.
+                }
+                
+                reminder.dueDateComponents = components
+                if let finalDate = Calendar.current.date(from: components) {
+                    reminder.alarms = [EKAlarm(absoluteDate: finalDate)]
+                }
+            }
+        } else if let timeISO = dueTimeISO {
+            // Only time provided. We should probably attach this to today's date or the existing date?
+            // But the schema says date defaults to today if omitted but time provided.
+            // However, this is UPDATE.
+            // If updating time only, we should likely keep the existing date.
+            
+            if var existingComps = reminder.dueDateComponents {
+                // Update time on existing date
+                let parts = timeISO.split(separator: ":")
+                if parts.count >= 2,
+                   let hour = Int(parts[0]),
+                   let minute = Int(parts[1]) {
+                    existingComps.hour = hour
+                    existingComps.minute = minute
+                    if parts.count > 2, let second = Int(parts[2]) {
+                        existingComps.second = second
+                    }
+                    reminder.dueDateComponents = existingComps
+                    if let finalDate = Calendar.current.date(from: existingComps) {
+                        reminder.alarms = [EKAlarm(absoluteDate: finalDate)]
+                    }
+                }
             }
         }
 

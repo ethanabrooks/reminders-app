@@ -29,14 +29,16 @@ struct CreateTaskPayload: Decodable {
     let title: String
     let notes: String?
     let list_id: String?
-    let due_iso: String?
+    let remind_me_date: String?
+    let remind_me_time: String?
 }
 
 struct UpdateTaskPayload: Decodable {
     let task_id: String
     let title: String?
     let notes: String?
-    let due_iso: String?
+    let remind_me_date: String?
+    let remind_me_time: String?
 }
 
 struct TaskActionPayload: Decodable {

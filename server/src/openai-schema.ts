@@ -60,11 +60,16 @@ export const openAIFunctionSchema = {
               description:
                 'Optional: ID of the list to add the task to. If omitted, uses default list.',
             },
-            due_iso: {
+            remind_me_date: {
               type: 'string' as const,
-              format: 'date-time',
+              format: 'date',
               description:
-                'Optional: Due date/time in ISO 8601 format (e.g., "2025-01-15T14:30:00Z").',
+                'Optional: The date to associate with this task (YYYY-MM-DD). Covers "do X by DATE" or "remind me on DATE". Example: "2025-11-24". If omitted but time is provided, defaults to today.',
+            },
+            remind_me_time: {
+              type: 'string' as const,
+              description:
+                'Optional: The time to associate with this task (HH:mm:ss). Example: "14:30:00". If omitted, the task is associated with the whole day.',
             },
           },
           required: ['title'],
@@ -91,10 +96,14 @@ export const openAIFunctionSchema = {
               type: 'string' as const,
               description: 'Optional: New notes for the task.',
             },
-            due_iso: {
+            remind_me_date: {
               type: 'string' as const,
-              format: 'date-time',
-              description: 'Optional: New due date/time in ISO 8601 format.',
+              format: 'date',
+              description: 'Optional: New date to associate with this task (YYYY-MM-DD).',
+            },
+            remind_me_time: {
+              type: 'string' as const,
+              description: 'Optional: New time to associate with this task (HH:mm:ss).',
             },
           },
           required: ['task_id'],

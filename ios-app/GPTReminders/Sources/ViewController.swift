@@ -272,7 +272,8 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
                     "properties": [
                         "title": ["type": "string", "description": "The title of the task"],
                         "notes": ["type": "string", "description": "Notes for the task"],
-                        "due_iso": ["type": "string", "description": "ISO 8601 date string"]
+                        "remind_me_date": ["type": "string", "description": "Reminder Date (YYYY-MM-DD)"],
+                        "remind_me_time": ["type": "string", "description": "Reminder Time (HH:mm:ss)"]
                     ],
                     "required": ["title"]
                 ]
@@ -342,7 +343,8 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
                     title: args.title,
                     notes: args.notes,
                     listId: args.list_id,
-                    dueISO: args.due_iso
+                    dueDateISO: args.remind_me_date,
+                    dueTimeISO: args.remind_me_time
                 )
                 let dto = remindersService.toDTO(reminder)
                 return toJson(dto)

@@ -45,14 +45,16 @@ export interface CreateTaskPayload {
   title: string;
   notes?: string;
   list_id?: string;
-  due_iso?: string;
+  remind_me_date?: string;
+  remind_me_time?: string;
 }
 
 export interface UpdateTaskPayload {
   task_id: string;
   title?: string;
   notes?: string;
-  due_iso?: string;
+  remind_me_date?: string;
+  remind_me_time?: string;
 }
 
 export interface CompleteTaskPayload {
