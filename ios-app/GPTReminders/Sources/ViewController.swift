@@ -578,6 +578,7 @@ class TaskView: UIView {
     private let titleLabel = UILabel()
     private let statusIcon = UILabel()
     private let dateLabel = UILabel()
+    private let notesLabel = UILabel()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -600,10 +601,15 @@ class TaskView: UIView {
         dateLabel.textColor = .secondaryLabel
         dateLabel.translatesAutoresizingMaskIntoConstraints = false
         
+        notesLabel.font = .italicSystemFont(ofSize: 12)
+        notesLabel.textColor = .secondaryLabel
+        notesLabel.numberOfLines = 2
+        notesLabel.translatesAutoresizingMaskIntoConstraints = false
+        
         statusIcon.font = .systemFont(ofSize: 14)
         statusIcon.translatesAutoresizingMaskIntoConstraints = false
         
-        let textStack = UIStackView(arrangedSubviews: [titleLabel, dateLabel])
+        let textStack = UIStackView(arrangedSubviews: [titleLabel, dateLabel, notesLabel])
         textStack.axis = .vertical
         textStack.spacing = 2
         textStack.translatesAutoresizingMaskIntoConstraints = false
@@ -613,7 +619,7 @@ class TaskView: UIView {
         
         NSLayoutConstraint.activate([
             statusIcon.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
-            statusIcon.centerYAnchor.constraint(equalTo: centerYAnchor),
+            statusIcon.topAnchor.constraint(equalTo: topAnchor, constant: 8),
             statusIcon.widthAnchor.constraint(equalToConstant: 24),
             
             textStack.leadingAnchor.constraint(equalTo: statusIcon.trailingAnchor, constant: 4),
@@ -638,9 +644,16 @@ class TaskView: UIView {
             dateLabel.isHidden = true
         }
         
+        if let notes = task.notes, !notes.isEmpty {
+            notesLabel.text = notes
+            notesLabel.isHidden = false
+        } else {
+            notesLabel.text = nil
+            notesLabel.isHidden = true
+        }
+        
         if task.status == "completed" {
             titleLabel.textColor = .secondaryLabel
-            // Strikethrough could go here
         } else {
             titleLabel.textColor = .label
         }

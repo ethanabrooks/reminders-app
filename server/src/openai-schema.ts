@@ -7,7 +7,7 @@ export const openAIFunctionSchema = {
       type: 'function' as const,
       function: {
         name: 'list_reminder_lists',
-        description: 'List all reminder lists (calendars) available on the device.',
+        description: 'List all reminder lists available on the device.',
         parameters: {
           type: 'object' as const,
           properties: {},
@@ -26,7 +26,7 @@ export const openAIFunctionSchema = {
             list_id: {
               type: 'string' as const,
               description:
-                'Optional: Filter by specific list ID. If omitted, returns tasks from all lists.',
+                'Optional: Filter by specific list ID. Get valid list IDs by calling list_reminder_lists first. The ID is the "id" field from the ReminderList objects returned by that function. If omitted, returns tasks from all lists.',
             },
             status: {
               type: 'string' as const,
@@ -58,7 +58,7 @@ export const openAIFunctionSchema = {
             list_id: {
               type: 'string' as const,
               description:
-                'Optional: ID of the list to add the task to. If omitted, uses default list.',
+                'Optional: ID of the reminder list to add the task to. Get valid list IDs by calling list_reminder_lists first. The ID is the "id" field from the ReminderList objects returned by that function. If omitted, uses the device\'s default reminder list.',
             },
             remind_me_date: {
               type: 'string' as const,
