@@ -8,10 +8,21 @@ PROJECT_PATH="ios-app/GPTReminders.xcodeproj"
 SCHEME="GPTReminders"
 DESTINATION="${1:-simulator}"
 DEVICE_NAME="${2:-iPhone 15 Pro}"
+DEBUG_FLAG="${3:-}"
+
+DEBUG_MODE="false"
+if [ "$DEBUG_FLAG" = "--debug" ]; then
+  DEBUG_MODE="true"
+fi
 
 echo "🔨 Building and running iOS app..."
 echo "   Destination: $DESTINATION"
 echo "   Device: $DEVICE_NAME"
+if [ "$DEBUG_MODE" = "true" ]; then
+  echo "   Debug Mode: ON"
+else
+  echo "   Debug Mode: OFF"
+fi
 echo ""
 
 if [ "$DESTINATION" = "simulator" ]; then
@@ -35,11 +46,19 @@ if [ "$DESTINATION" = "simulator" ]; then
 
   # Build the app
   echo "🔨 Building app..."
+
+  # Configure build settings based on debug mode
+  BUILD_SETTINGS=""
+  if [ "$DEBUG_MODE" = "true" ]; then
+    BUILD_SETTINGS="SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG_TOOLS"
+  fi
+
   if ! xcodebuild \
     -project "$PROJECT_PATH" \
     -scheme "$SCHEME" \
     -destination "platform=iOS Simulator,id=$SIM_UDID" \
     -derivedDataPath build \
+    $BUILD_SETTINGS \
     clean build; then
     echo "❌ Build failed"
     exit 1

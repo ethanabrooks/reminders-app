@@ -6,7 +6,11 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     private var messages: [OpenAIMessage] = []
     
     private var displayedMessages: [OpenAIMessage] {
-        messages.filter { $0.role != "tool" }
+        #if DEBUG_TOOLS
+        return messages
+        #else
+        return messages.filter { $0.role != "tool" }
+        #endif
     }
 
     private var apiKey: String {
@@ -486,7 +490,7 @@ class ChatCell: UITableViewCell {
             bubbleView.backgroundColor = .systemGray5
              messageLabel.textColor = .secondaryLabel
              messageLabel.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
-             messageLabel.text = "⚙️ Tool Output"
+             messageLabel.text = "⚙️ Tool Output: \(msg.content ?? "Unknown")"
             
             trailingConstraint.isActive = false
             leadingConstraint.isActive = true
