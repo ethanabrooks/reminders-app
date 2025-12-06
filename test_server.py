@@ -1,7 +1,5 @@
 """Simple test server matching the FastMCP tutorial example."""
 
-from contextlib import asynccontextmanager
-
 from fastmcp import FastMCP  # pyright: ignore[reportMissingImports]
 from fastmcp.dependencies import Depends  # pyright: ignore[reportMissingImports]
 
@@ -18,13 +16,19 @@ async def get_user_id() -> int:
     return 42
 
 
+# Dependency that depends on another dependency (like get_tasks_client)
+def get_client(config: dict = Depends(get_config)) -> dict:
+    return {"client_config": config, "client_id": "test-client"}
+
+
 @mcp.tool
 async def greet(
     name: str,
     config: dict = Depends(get_config),
     user_id: int = Depends(get_user_id),
+    client: dict = Depends(get_client),
 ) -> str:
-    return f"User {user_id} fetching '{name}' from {config['api_url']}"
+    return f"User {user_id} fetching '{name}' from {config['api_url']} via {client['client_id']}"
 
 
 def main() -> None:
