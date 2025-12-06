@@ -1,9 +1,10 @@
+from datetime import datetime
 from typing import Iterable, Protocol, cast
 
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
-from models import Task, TaskList, normalize_task
+from models import Task, TaskList, TaskStatus, normalize_task
 
 
 class ExecutableRequest(Protocol):
@@ -61,7 +62,7 @@ def _expect_list(value: object | None, context: str) -> list[dict[str, object]]:
 
 class GoogleTasksClient:
     """Thin, strongly-typed wrapper around googleapiclient for Tasks.
-    
+
     All methods take primitive parameters. Business logic belongs in server.py.
     """
 
@@ -98,14 +99,14 @@ class GoogleTasksClient:
         tasklist_id: str,
         title: str,
         notes: str | None = None,
-        due: str | None = None,
+        due: datetime | None = None,
     ) -> Task:
         """Insert a new task."""
         body: dict[str, object] = dict(title=title)
         if notes is not None:
             body["notes"] = notes
         if due is not None:
-            body["due"] = due
+            body["due"] = due.astimezone().isoformat()
 
         request = self._service.tasks().insert(tasklist=tasklist_id, body=body)
         response = _expect_dict(request.execute(), "insert_task")
@@ -117,9 +118,9 @@ class GoogleTasksClient:
         task_id: str,
         title: str | None = None,
         notes: str | None = None,
-        due: str | None = None,
-        status: str | None = None,
-        completed: str | None = None,
+        due: datetime | None = None,
+        status: TaskStatus | None = None,
+        completed: datetime | None = None,
     ) -> Task:
         """Patch an existing task. Only non-None fields are sent."""
         body: dict[str, object] = {}
@@ -128,11 +129,11 @@ class GoogleTasksClient:
         if notes is not None:
             body["notes"] = notes
         if due is not None:
-            body["due"] = due
+            body["due"] = due.astimezone().isoformat()
         if status is not None:
             body["status"] = status
         if completed is not None:
-            body["completed"] = completed
+            body["completed"] = completed.astimezone().isoformat()
 
         request = self._service.tasks().patch(
             tasklist=tasklist_id,

@@ -30,8 +30,8 @@ _MCP = FastMCP[None](
 )
 
 
-def _now_iso() -> str:
-    return datetime.now().astimezone().isoformat()
+def _now() -> datetime:
+    return datetime.now().astimezone()
 
 
 @_MCP.tool
@@ -71,11 +71,12 @@ async def create_task(
 ) -> Task:
     """Create a new task."""
     tasklist_id = params.tasklist_id or default_tasklist
+    due_dt = datetime.fromisoformat(params.due_iso) if params.due_iso else None
     task = tasks_client.insert_task(
         tasklist_id=tasklist_id,
         title=params.title,
         notes=params.notes,
-        due=params.due_iso,
+        due=due_dt,
     )
     logger.info("Created task %s", task.id)
     return task
@@ -89,12 +90,13 @@ async def update_task(
 ) -> Task:
     """Update an existing task."""
     tasklist_id = params.tasklist_id or default_tasklist
+    due_dt = datetime.fromisoformat(params.due_iso) if params.due_iso else None
     task = tasks_client.patch_task(
         tasklist_id=tasklist_id,
         task_id=params.task_id,
         title=params.title,
         notes=params.notes,
-        due=params.due_iso,
+        due=due_dt,
         status=params.status,
     )
     logger.info("Updated task %s", task.id)
@@ -113,7 +115,7 @@ async def complete_task(
         tasklist_id=tasklist_id,
         task_id=params.task_id,
         status="completed",
-        completed=_now_iso(),
+        completed=_now(),
     )
     logger.info("Completed task %s", task.id)
     return task
