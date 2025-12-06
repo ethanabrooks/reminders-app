@@ -49,3 +49,4 @@ coverage/
 .envrc
 
 **/__pycache__/
+token.json
