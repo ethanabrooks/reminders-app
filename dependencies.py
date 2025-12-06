@@ -1,7 +1,7 @@
 from functools import cache
 from pathlib import Path
 
-from fastmcp.dependencies import Depends  # pyright: ignore[reportMissingImports]
+from fastmcp.dependencies import Depends
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from pydantic import Field, ValidationError
@@ -65,9 +65,7 @@ def _load_credentials(settings: Settings) -> Credentials:
 def get_tasks_client(settings: Settings = Depends(get_settings)) -> GoogleTasksClient:
     """Provide an authenticated Google Tasks client wrapper."""
     credentials = _load_credentials(settings)
-    return GoogleTasksClient(
-        credentials=credentials, default_tasklist_id=settings.default_tasklist_id
-    )
+    return GoogleTasksClient(credentials=credentials)
 
 
 def get_default_tasklist(settings: Settings = Depends(get_settings)) -> str:

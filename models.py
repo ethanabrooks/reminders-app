@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -25,6 +24,9 @@ class Task(BaseModel):
     completedISO: str | None = Field(default=None, alias="completed_iso")
     listId: str | None = Field(default=None, alias="list_id")
     url: str | None = None
+
+
+# --- Input models for tool parameters ---
 
 
 class ListTasksInput(BaseModel):
@@ -58,7 +60,11 @@ class DeleteTaskInput(BaseModel):
     tasklist_id: str | None = None
 
 
+# --- Utility for converting API responses ---
+
+
 def normalize_task(payload: dict[str, object], tasklist_id: str | None) -> Task:
+    """Convert a raw Google Tasks API response dict to a Task model."""
     task_id = str(payload.get("id", "unknown"))
     title = payload.get("title")
     notes = payload.get("notes")
@@ -79,8 +85,3 @@ def normalize_task(payload: dict[str, object], tasklist_id: str | None) -> Task:
         list_id=tasklist_id,
         url=str(payload["selfLink"]) if "selfLink" in payload else None,
     )
-
-
-def now_iso() -> str:
-    return datetime.now().astimezone().isoformat()
-

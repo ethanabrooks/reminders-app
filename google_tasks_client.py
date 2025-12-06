@@ -3,16 +3,7 @@ from typing import Iterable, Protocol, cast
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
-from models import (
-    CompleteTaskInput,
-    CreateTaskInput,
-    ListTasksInput,
-    Task,
-    TaskList,
-    UpdateTaskInput,
-    normalize_task,
-    now_iso,
-)
+from models import Task, TaskList, normalize_task
 
 
 class ExecutableRequest(Protocol):
@@ -69,25 +60,21 @@ def _expect_list(value: object | None, context: str) -> list[dict[str, object]]:
 
 
 class GoogleTasksClient:
-    """Strongly-typed wrapper around googleapiclient for Tasks."""
+    """Thin, strongly-typed wrapper around googleapiclient for Tasks.
+    
+    All methods take primitive parameters. Business logic belongs in server.py.
+    """
 
-    def __init__(self, credentials: Credentials, default_tasklist_id: str) -> None:
+    def __init__(self, credentials: Credentials) -> None:
         self._service: TasksService = cast(
             TasksService,
             build("tasks", "v1", credentials=credentials, cache_discovery=False),
         )
-        self._default_tasklist_id = default_tasklist_id
-
-    def _ensure_tasklist(self, tasklist_id: str | None) -> str:
-        return tasklist_id or self._default_tasklist_id
-
-    def _execute(self, request: ExecutableRequest, context: str) -> dict[str, object]:
-        response = request.execute()
-        return _expect_dict(response, context)
 
     def list_task_lists(self) -> list[TaskList]:
+        """List all task lists."""
         request = self._service.tasklists().list(maxResults=100)
-        response = self._execute(request, "list_task_lists")
+        response = _expect_dict(request.execute(), "list_task_lists")
         items = _expect_list(response.get("items"), "tasklists.items")
         return [
             TaskList(id=str(item["id"]), title=str(item.get("title", "")))
@@ -95,67 +82,67 @@ class GoogleTasksClient:
             if "id" in item
         ]
 
-    def list_tasks(self, params: ListTasksInput) -> list[Task]:
-        tasklist_id = self._ensure_tasklist(params.tasklist_id)
+    def list_tasks(self, tasklist_id: str) -> list[Task]:
+        """List all tasks in a tasklist (includes completed and hidden)."""
         request = self._service.tasks().list(
             tasklist=tasklist_id,
             showCompleted=True,
             showHidden=True,
         )
-        response = self._execute(request, "list_tasks")
+        response = _expect_dict(request.execute(), "list_tasks")
         items = _expect_list(response.get("items"), "tasks.items")
-        tasks: list[Task] = []
-        for item in items:
-            if params.status and item.get("status") != params.status:
-                continue
-            tasks.append(normalize_task(item, tasklist_id))
-        return tasks
+        return [normalize_task(item, tasklist_id) for item in items]
 
-    def create_task(self, params: CreateTaskInput) -> Task:
-        tasklist_id = self._ensure_tasklist(params.tasklist_id)
-        body: dict[str, object] = dict(title=params.title)
-        if params.notes is not None:
-            body["notes"] = params.notes
-        if params.due_iso is not None:
-            body["due"] = params.due_iso
+    def insert_task(
+        self,
+        tasklist_id: str,
+        title: str,
+        notes: str | None = None,
+        due: str | None = None,
+    ) -> Task:
+        """Insert a new task."""
+        body: dict[str, object] = dict(title=title)
+        if notes is not None:
+            body["notes"] = notes
+        if due is not None:
+            body["due"] = due
 
         request = self._service.tasks().insert(tasklist=tasklist_id, body=body)
-        response = self._execute(request, "create_task")
+        response = _expect_dict(request.execute(), "insert_task")
         return normalize_task(response, tasklist_id)
 
-    def update_task(self, params: UpdateTaskInput) -> Task:
-        tasklist_id = self._ensure_tasklist(params.tasklist_id)
+    def patch_task(
+        self,
+        tasklist_id: str,
+        task_id: str,
+        title: str | None = None,
+        notes: str | None = None,
+        due: str | None = None,
+        status: str | None = None,
+        completed: str | None = None,
+    ) -> Task:
+        """Patch an existing task. Only non-None fields are sent."""
         body: dict[str, object] = {}
-        if params.title is not None:
-            body["title"] = params.title
-        if params.notes is not None:
-            body["notes"] = params.notes
-        if params.due_iso is not None:
-            body["due"] = params.due_iso
-        if params.status is not None:
-            body["status"] = params.status
+        if title is not None:
+            body["title"] = title
+        if notes is not None:
+            body["notes"] = notes
+        if due is not None:
+            body["due"] = due
+        if status is not None:
+            body["status"] = status
+        if completed is not None:
+            body["completed"] = completed
 
         request = self._service.tasks().patch(
             tasklist=tasklist_id,
-            task=params.task_id,
+            task=task_id,
             body=body,
         )
-        response = self._execute(request, "update_task")
+        response = _expect_dict(request.execute(), "patch_task")
         return normalize_task(response, tasklist_id)
 
-    def complete_task(self, params: CompleteTaskInput) -> Task:
-        tasklist_id = self._ensure_tasklist(params.tasklist_id)
-        body: dict[str, object] = dict(status="completed", completed=now_iso())
-        request = self._service.tasks().patch(
-            tasklist=tasklist_id,
-            task=params.task_id,
-            body=body,
-        )
-        response = self._execute(request, "complete_task")
-        return normalize_task(response, tasklist_id)
-
-    def delete_task(self, task_id: str, tasklist_id: str | None = None) -> None:
-        tasklist = self._ensure_tasklist(tasklist_id)
-
-        request = self._service.tasks().delete(tasklist=tasklist, task=task_id)
+    def delete_task(self, tasklist_id: str, task_id: str) -> None:
+        """Delete a task."""
+        request = self._service.tasks().delete(tasklist=tasklist_id, task=task_id)
         request.execute()

@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from fastmcp import FastMCP
 from fastmcp.dependencies import Depends
@@ -19,7 +20,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
 
-_MCP = FastMCP(
+_MCP = FastMCP[None](
     name="Google Tasks MCP",
     instructions=(
         "This MCP server exposes Google Tasks as tools. "
@@ -27,6 +28,10 @@ _MCP = FastMCP(
         "then create/update/complete/delete tasks as needed."
     ),
 )
+
+
+def _now_iso() -> str:
+    return datetime.now().astimezone().isoformat()
 
 
 @_MCP.tool
@@ -46,13 +51,16 @@ async def list_tasks(
     default_tasklist: str = Depends(get_default_tasklist),
 ) -> list[Task]:
     """List tasks in a task list, optionally filtered by status."""
-    tasks = tasks_client.list_tasks(
-        ListTasksInput(
-            tasklist_id=params.tasklist_id or default_tasklist, status=params.status
-        )
-    )
-    logger.info("Listed %d tasks", len(tasks))
-    return tasks
+    tasklist_id = params.tasklist_id or default_tasklist
+    all_tasks = tasks_client.list_tasks(tasklist_id)
+
+    if params.status is None:
+        filtered = all_tasks
+    else:
+        filtered = [t for t in all_tasks if t.status == params.status]
+
+    logger.info("Listed %d tasks (filtered from %d)", len(filtered), len(all_tasks))
+    return filtered
 
 
 @_MCP.tool
@@ -62,13 +70,12 @@ async def create_task(
     default_tasklist: str = Depends(get_default_tasklist),
 ) -> Task:
     """Create a new task."""
-    task = tasks_client.create_task(
-        CreateTaskInput(
-            title=params.title,
-            notes=params.notes,
-            due_iso=params.due_iso,
-            tasklist_id=params.tasklist_id or default_tasklist,
-        )
+    tasklist_id = params.tasklist_id or default_tasklist
+    task = tasks_client.insert_task(
+        tasklist_id=tasklist_id,
+        title=params.title,
+        notes=params.notes,
+        due=params.due_iso,
     )
     logger.info("Created task %s", task.id)
     return task
@@ -81,15 +88,14 @@ async def update_task(
     default_tasklist: str = Depends(get_default_tasklist),
 ) -> Task:
     """Update an existing task."""
-    task = tasks_client.update_task(
-        UpdateTaskInput(
-            task_id=params.task_id,
-            title=params.title,
-            notes=params.notes,
-            due_iso=params.due_iso,
-            status=params.status,
-            tasklist_id=params.tasklist_id or default_tasklist,
-        )
+    tasklist_id = params.tasklist_id or default_tasklist
+    task = tasks_client.patch_task(
+        tasklist_id=tasklist_id,
+        task_id=params.task_id,
+        title=params.title,
+        notes=params.notes,
+        due=params.due_iso,
+        status=params.status,
     )
     logger.info("Updated task %s", task.id)
     return task
@@ -102,11 +108,12 @@ async def complete_task(
     default_tasklist: str = Depends(get_default_tasklist),
 ) -> Task:
     """Mark a task as completed."""
-    task = tasks_client.complete_task(
-        CompleteTaskInput(
-            task_id=params.task_id,
-            tasklist_id=params.tasklist_id or default_tasklist,
-        )
+    tasklist_id = params.tasklist_id or default_tasklist
+    task = tasks_client.patch_task(
+        tasklist_id=tasklist_id,
+        task_id=params.task_id,
+        status="completed",
+        completed=_now_iso(),
     )
     logger.info("Completed task %s", task.id)
     return task
@@ -120,7 +127,7 @@ async def delete_task(
 ) -> dict[str, bool]:
     """Delete a task."""
     tasklist_id = params.tasklist_id or default_tasklist
-    tasks_client.delete_task(task_id=params.task_id, tasklist_id=tasklist_id)
+    tasks_client.delete_task(tasklist_id=tasklist_id, task_id=params.task_id)
     logger.info("Deleted task %s", params.task_id)
     return dict(ok=True)
 
