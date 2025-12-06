@@ -47,3 +47,5 @@ ios-app/*.xcworkspace/xcuserdata/
 coverage/
 .nyc_output/
 .envrc
+
+**/__pycache__/

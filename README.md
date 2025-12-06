@@ -1,61 +1,70 @@
-# GPT Reminders Bridge
+# Google Tasks MCP
 
-A secure bridge connecting ChatGPT to Apple Reminders via a personal iOS app.
+A FastMCP server that exposes Google Tasks as tools. No iOS app, no APNs — the server talks directly to Google Tasks via OAuth.
 
 ## Architecture
 
 ```mermaid
 graph TD
     User[User] -->|Prompts| GPT[ChatGPT]
-    GPT -->|1. Call Tool| Server[Node.js Server]
-    Server -->|2. APNs Push| APNs[Apple Push Service]
-    APNs -->|3. Wake App| iOS[iOS App]
-    iOS -->|4. Query/Update| Reminders[Apple Reminders DB]
-    iOS -->|5. Return Result| Server
-    Server -->|6. Return JSON| GPT
-    GPT -->|7. Answer User| User
+    GPT -->|MCP tools| MCP[FastMCP Server]
+    MCP -->|Google API| Tasks[Google Tasks]
+    Tasks --> MCP --> GPT --> User
 ```
 
-## Directory Structure
+## Tool surface
+- `list_task_lists` — list available task lists
+- `list_tasks` — list tasks (filter by status)
+- `create_task` — create a task
+- `update_task` — update a task
+- `complete_task` — mark a task as completed
+- `delete_task` — delete a task
 
-- **[`server/`](server/README.md)**: Node.js backend that signs commands and handles APNs.
-- **[`ios-app/`](ios-app/README.md)**: Swift iOS app that executes commands on the device.
-- **[`scripts/`](scripts/README.md)**: Testing and utility scripts.
+Task shape returned:
+- `id`, `title`, `notes`, `status` (`needsAction` or `completed`), `dueISO`, `completedISO`, `listId`, `url`
 
-## Quick Start
+## Setup
 
-1.  **Server Setup**:
-    ```bash
-    cd server
-    npm install
-    npm run gen-keys
-    npm run dev
-    ```
-2.  **iOS Setup**:
-    - See **[`ios-app/SETUP.md`](ios-app/SETUP.md)** for detailed instructions
-    - **Simulator**: Works with polling mode (no APNs needed)
-    - **Physical Device**: Requires APNs configuration for push notifications
+1) Enable Google Tasks API and create OAuth client (Desktop app)  
+   - Download `credentials.json` to the repo root.
 
-## Security Model
-
-```mermaid
-sequenceDiagram
-    participant Server
-    participant iOS as iOS App
-    participant Keychain as iOS Keychain
-
-    Note over Server, iOS: 1. Command Signing
-    Server->>Server: Create JSON Payload
-    Server->>Server: Sign with PRIVATE Key (RS256)
-    Server->>iOS: Send Signed JWT via APNs
-
-    Note over iOS: 2. Verification
-    iOS->>iOS: Intercept Silent Push
-    iOS->>Keychain: Retrieve PUBLIC Key
-    iOS->>iOS: Verify JWT Signature
-    alt Signature Valid
-        iOS->>iOS: Execute Command
-    else Invalid
-        iOS->>iOS: Drop Packet & Log Error
-    end
+2) Install deps (uses uv):
+```bash
+uv sync
 ```
+
+3) Create `token.json` (one-time OAuth consent):  
+   Run a short script (for example):
+```bash
+uv run python - <<'PY'
+from pathlib import Path
+from google_auth_oauthlib.flow import InstalledAppFlow
+
+creds_path = Path("credentials.json")
+flow = InstalledAppFlow.from_client_secrets_file(
+    creds_path,
+    scopes=["https://www.googleapis.com/auth/tasks"],
+)
+creds = flow.run_local_server(port=0)
+Path("token.json").write_text(creds.to_json())
+print("token.json written")
+PY
+```
+Keep `token.json` private and out of version control.
+
+4) Run the MCP server:
+```bash
+uv run python server.py
+# SSE endpoint: http://0.0.0.0:8000/sse/
+```
+
+## Configuration
+- `credentials.json` — Google OAuth client (installed app)
+- `token.json` — stored access/refresh token
+- Optional `.env` for overrides:
+  - `CREDENTIALS_PATH`
+  - `TOKEN_PATH`
+  - `DEFAULT_TASKLIST_ID` (defaults to `@default`)
+
+## Notes
+- This replaces the previous Apple Reminders + iOS bridge. Legacy `server/` and `ios-app/` directories are no longer used.

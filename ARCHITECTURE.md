@@ -1,163 +1,54 @@
-# Architecture Deep Dive
+# Architecture (Google Tasks MCP)
 
 ## System Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         GPT Assistant                               │
-│  (OpenAI API, Custom GPT, or your LLM integration)                  │
+│ (OpenAI API, Custom GPT, or any MCP-capable client)                 │
 └───────────────────────────┬─────────────────────────────────────────┘
                             │
-                            │ HTTP POST /tool/tasks
-                            │ { userId, op, args }
+                            │ MCP tool calls (SSE)
                             │
 ┌───────────────────────────▼─────────────────────────────────────────┐
-│                    Node.js Proxy Server                             │
-│  ┌──────────────────────────────────────────────────────────────┐   │
-│  │  1. Validate request                                         │   │
-│  │  2. Generate unique command ID                               │   │
-│  │  3. Sign command with RS256 private key                      │   │
-│  │  4. Create JWT with 60s TTL                                  │   │
-│  └──────────────────────────────────────────────────────────────┘   │
+│                    FastMCP Server (Python)                          │
+│  - Validates input with Pydantic                                    │
+│  - Uses Google Tasks API via OAuth token                            │
 └───────────────────────────┬─────────────────────────────────────────┘
                             │
-                    ┌───────┴────────┐
-                    │                │
-                    │ APNs Push      │ Polling GET /device/commands
-                    │ (instant)      │ (fallback)
-                    │                │
-┌───────────────────▼────────────────▼─────────────────────────────────┐
-│                        iOS App (Swift)                               │
-│  ┌──────────────────────────────────────────────────────────────┐   │
-│  │  1. Receive command (push or poll)                           │   │
-│  │  2. Verify JWT signature with public key                     │   │
-│  │  3. Check expiration (60s)                                   │   │
-│  │  4. Request Reminders permission if needed                   │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└───────────────────────────┬─────────────────────────────────────────┘
-                            │
-                            │ EventKit API
+                            │ HTTPS (Google APIs)
                             │
 ┌───────────────────────────▼─────────────────────────────────────────┐
-│                    Apple Reminders.app                              │
-│  (System database, synced via iCloud)                               │
-└───────────────────────────┬─────────────────────────────────────────┘
-                            │
-                            │ Read/Write Result
-                            │
-┌───────────────────────────▼─────────────────────────────────────────┐
-│                        iOS App                                      │
-│  Sends result via HTTP POST /device/result                          │
-│  { commandId, success, result }                                     │
-└───────────────────────────┬─────────────────────────────────────────┘
-                            │
-┌───────────────────────────▼─────────────────────────────────────────┐
-│                    Node.js Proxy Server                             │
-│  Stores result, returns to GPT (if waiting)                         │
+│                         Google Tasks                                │
+│  - Task lists and tasks stored in user's Google account             │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Data Flow
+## Tooling Surface
+- `list_task_lists`
+- `list_tasks` (optional status filter)
+- `create_task`
+- `update_task`
+- `complete_task`
+- `delete_task`
 
-### Example: "Add reminder to buy milk tomorrow"
+## Data Shapes
+- Task: `id`, `title`, `notes`, `status` (`needsAction` | `completed`), `dueISO`, `completedISO`, `listId`, `url`
+- TaskList: `id`, `title`
 
-1. **User → GPT:**
-   "Add a reminder to buy milk tomorrow at 9am"
+## Auth & Config
+- OAuth installed-app credentials (`credentials.json`) + stored token (`token.json`)
+- Scope: `https://www.googleapis.com/auth/tasks`
+- Default task list: `@default` (override via `DEFAULT_TASKLIST_ID`)
 
-2. **GPT → Server:**
+## Lifecycle
+1. Client calls an MCP tool.
+2. FastMCP validates input (Pydantic).
+3. Google Tasks API call executes the operation.
+4. Response is normalized and returned to the client.
 
-   ```http
-   POST /tool/tasks
-   {
-     "userId": "user-123",
-     "op": "create_task",
-     "args": {
-       "title": "Buy milk",
-       "due_iso": "2025-11-10T09:00:00Z"
-     }
-   }
-   ```
-
-3. **Server processes:**
-
-   ```typescript
-   // Generate command
-   const commandId = 'cmd_1699564234_abc123';
-
-   // Sign JWT
-   const jwt = sign(
-     {
-       id: commandId,
-       kind: 'create_task',
-       payload: { title: 'Buy milk', due_iso: '...' },
-       iat: 1699564234,
-       exp: 1699564294, // +60s
-     },
-     PRIVATE_KEY,
-     { algorithm: 'RS256' },
-   );
-
-   // Send via APNs
-   await sendSilentPush(deviceToken, { envelope: jwt });
-
-   // Return to GPT
-   return { ok: true, commandId };
-   ```
-
-4. **iOS App receives push:**
-
-   ```swift
-   // APNs delivers
-   { "envelope": "eyJhbG..." }
-
-   // Verify signature
-   let payload = try jwtVerifier.verify(token: envelope)
-
-   // Execute
-   let reminder = try remindersService.createReminder(
-     title: payload["title"],
-     dueISO: payload["due_iso"]
-   )
-
-   // Send result
-   POST /device/result {
-     commandId: "cmd_1699564234_abc123",
-     success: true,
-     result: {
-       id: "reminder-uuid",
-       title: "Buy milk",
-       url: "gptreminders://task/reminder-uuid"
-     }
-   }
-   ```
-
-5. **Server → GPT (optional polling):**
-
-   ```http
-   GET /tool/result/cmd_1699564234_abc123
-
-   Response: {
-     commandId: "cmd_1699564234_abc123",
-     success: true,
-     result: { ... }
-   }
-   ```
-
-6. **GPT → User:**
-   "I've added a reminder to buy milk tomorrow at 9 AM. [Tap to view](gptreminders://task/reminder-uuid)"
-
-## Security Model
-
-### JWT Token Structure
-
-**Header:**
-
-```json
-{
-  "alg": "RS256",
-  "typ": "JWT"
-}
-```
+## Notes
+- This replaces the previous Apple Reminders + iOS/APNs architecture. Legacy `server/` and `ios-app/` directories are no longer used.
 
 **Payload:**
 
